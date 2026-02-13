@@ -16,7 +16,7 @@ const FinalCTA = () => {
                 transition={{ duration: 0.7 }}
                 className="text-3xl md:text-5xl font-display font-bold mb-6"
               >
-                Pronto para organizar a execução de verdade?
+                Marcas líderes não improvisam. Executam com método.
               </motion.h2>
               <motion.p
                 initial={{ opacity: 0, y: 15 }}
@@ -25,8 +25,8 @@ const FinalCTA = () => {
                 transition={{ duration: 0.6, delay: 0.15 }}
                 className="text-lg text-secondary-foreground leading-relaxed mb-10 max-w-xl mx-auto"
               >
-                Marque uma conversa com a ONMX® e saia com um plano claro,
-                priorizado e viável.
+                Converse com a ONMX e tenha um plano completo para comunicar, lançar
+                e evoluir com consistência.
               </motion.p>
 
               <form

@@ -1,10 +1,22 @@
 import { motion } from "framer-motion";
 
 const audiences = [
-  { num: "1", label: "Times de marketing corporativo" },
-  { num: "2", label: "Empresas em fase de crescimento ou reposicionamento" },
-  { num: "3", label: "Marcas com alta exigência visual e estratégica" },
-  { num: "4", label: "Projetos que demandam execução rápida e premium" },
+  {
+    num: "1",
+    label: "Times que lideram comunicação corporativa",
+  },
+  {
+    num: "2",
+    label: "Marcas em fase de transformação e expansão estratégica",
+  },
+  {
+    num: "3",
+    label: "Empresas com padrão visual e narrativa de alta exigência",
+  },
+  {
+    num: "4",
+    label: "Projetos que precisam de execução premium, sem fricção",
+  },
 ] as const;
 
 const Audience = () => {
@@ -18,7 +30,7 @@ const Audience = () => {
           transition={{ duration: 0.7 }}
           className="max-w-5xl mx-auto text-3xl md:text-5xl font-display font-bold mb-12"
         >
-          Feita para empresas que precisam de comunicação no nível certo.
+          Feita para marcas que precisam estar sempre à frente.
         </motion.h2>
 
         <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-7 text-left">
@@ -51,7 +63,7 @@ const Audience = () => {
                   </span>
                 </span>
 
-                <p className="mt-6 font-body text-base md:text-lg text-foreground/85 leading-relaxed">
+                <p className="mt-6 font-body text-base md:text-lg text-foreground/85 leading-relaxed whitespace-pre-line">
                   {label}
                 </p>
               </div>
