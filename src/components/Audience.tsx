@@ -1,11 +1,11 @@
 import { motion } from "framer-motion";
 
 const audiences = [
-  "Times de marketing corporativo",
-  "Empresas em fase de crescimento ou reposicionamento",
-  "Marcas com alta exigência visual e estratégica",
-  "Projetos que demandam execução rápida e premium",
-];
+  { num: "1", label: "Times de marketing corporativo" },
+  { num: "2", label: "Empresas em fase de crescimento ou reposicionamento" },
+  { num: "3", label: "Marcas com alta exigência visual e estratégica" },
+  { num: "4", label: "Projetos que demandam execução rápida e premium" },
+] as const;
 
 const Audience = () => {
   return (
@@ -16,15 +16,15 @@ const Audience = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.7 }}
-          className="text-3xl md:text-5xl font-display font-bold mb-12"
+          className="max-w-5xl mx-auto text-3xl md:text-5xl font-display font-bold mb-12"
         >
           Feita para empresas que precisam de comunicação no nível certo.
         </motion.h2>
 
         <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-7 text-left">
-          {audiences.map((item, i) => (
+          {audiences.map(({ label, num }, i) => (
             <motion.li
-              key={item}
+              key={label}
               initial={{ opacity: 0, y: 14 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -46,11 +46,13 @@ const Audience = () => {
 
               <div className="relative h-full p-8 md:p-10 flex flex-col justify-between">
                 <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary ring-1 ring-primary/15">
-                  <span className="h-2 w-2 rounded-full bg-primary" aria-hidden="true" />
+                  <span className="font-display text-sm font-semibold tracking-tight">
+                    {num}
+                  </span>
                 </span>
 
                 <p className="mt-6 font-body text-base md:text-lg text-foreground/85 leading-relaxed">
-                  {item}
+                  {label}
                 </p>
               </div>
             </motion.li>

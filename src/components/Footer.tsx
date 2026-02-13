@@ -21,7 +21,7 @@ const Footer = () => {
 
     const ctx = gsap.context(() => {
       // Keep a noticeable "stretch" without clipping.
-      const STRETCH_SCALE = 1.35;
+      const STRETCH_SCALE = 1.42;
 
       gsap.set(wordmarkEl, {
         scaleY: STRETCH_SCALE,
@@ -29,25 +29,22 @@ const Footer = () => {
         willChange: "transform",
       });
 
-      const animateTo = (scaleY: number, duration: number) =>
-        gsap.to(wordmarkEl, {
-          scaleY,
-          duration,
-          ease: "power3.out",
-          overwrite: true,
-        });
-
-      const trigger = ScrollTrigger.create({
-        trigger: footerEl,
-        start: "top 85%",
-        end: "bottom 60%",
-        onEnter: () => animateTo(1, 1.05),
-        onEnterBack: () => animateTo(1, 0.9),
-        onLeaveBack: () => animateTo(STRETCH_SCALE, 0.75),
+      const tween = gsap.to(wordmarkEl, {
+        scaleY: 1,
+        ease: "none",
+        scrollTrigger: {
+          trigger: footerEl,
+          // Tie to scroll so it feels consistent at the page end.
+          start: "top bottom",
+          end: "top 60%",
+          scrub: 0.8,
+          invalidateOnRefresh: true,
+        },
       });
 
       return () => {
-        trigger.kill();
+        tween.scrollTrigger?.kill();
+        tween.kill();
         gsap.set(wordmarkEl, { willChange: "auto" });
       };
     }, footerEl);
