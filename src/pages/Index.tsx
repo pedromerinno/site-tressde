@@ -1,30 +1,25 @@
-import Hero from "@/components/Hero";
 import FloatingNavbar from "@/components/FloatingNavbar";
-import ClientLogosMarquee from "@/components/ClientLogosMarquee";
-import Services from "@/components/Services";
-import Positioning from "@/components/Positioning";
-import Differentials from "@/components/Differentials";
-import Method from "@/components/Method";
-import Cases from "@/components/Cases";
-import Audience from "@/components/Audience";
+import PortfolioHero from "@/components/PortfolioHero";
+import StudioMediaReveal from "@/components/StudioMediaReveal";
+import StudioSection from "@/components/StudioSection";
+import PortfolioGrid from "@/components/PortfolioGrid";
 import FinalCTA from "@/components/FinalCTA";
 import Footer from "@/components/Footer";
+import { CasesSectionProvider } from "@/contexts/CasesSectionContext";
 
 const Index = () => {
   return (
-    <main className="bg-background text-foreground">
-      <FloatingNavbar />
-      <Hero />
-      <ClientLogosMarquee />
-      <Services />
-      <Positioning />
-      <Differentials />
-      <Method />
-      <Cases />
-      <Audience />
+    <CasesSectionProvider>
+      <main className="bg-background text-foreground min-h-screen">
+        <FloatingNavbar />
+      <PortfolioHero />
+      <StudioMediaReveal />
+      <StudioSection />
+      <PortfolioGrid />
       <FinalCTA />
       <Footer />
     </main>
+    </CasesSectionProvider>
   );
 };
 

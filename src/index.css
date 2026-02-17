@@ -7,7 +7,7 @@
 @layer base {
   :root {
     color-scheme: light;
-    --background: 0 0% 100%;
+    --background: 40 15% 92%; /* #EEECE8 */
     --foreground: 222 47% 11%;
 
     --card: 240 6% 98%;
@@ -16,8 +16,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    /* Brand purple (official) */
-    --primary: 278.93 100% 47.45%; /* #9D00F2 */
+    /* Brand blue – TRESSDE (official) */
+    --primary: 230 100% 47.1%; /* #0028F0 */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 240 6% 97%;
@@ -26,27 +26,27 @@
     --muted: 240 6% 97%;
     --muted-foreground: 222 12% 45%;
 
-    /* Light purple surface (official scale) */
-    --accent: 279 100% 94%; /* #F5E2FF */
-    --accent-foreground: 275 90% 22%;
+    /* Light blue surface (official scale) */
+    --accent: 230 70% 94%; /* light TRESSDE blue */
+    --accent-foreground: 230 90% 22%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 240 6% 90%;
     --input: 240 6% 90%;
-    --ring: 278.93 100% 47.45%;
+    --ring: 230 100% 47.1%;
 
     --radius: 0.75rem;
 
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 222 47% 11%;
-    --sidebar-primary: 278.93 100% 47.45%;
+    --sidebar-primary: 230 100% 47.1%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 279 100% 94%;
-    --sidebar-accent-foreground: 275 90% 22%;
+    --sidebar-accent: 230 70% 94%;
+    --sidebar-accent-foreground: 230 90% 22%;
     --sidebar-border: 240 6% 90%;
-    --sidebar-ring: 278.93 100% 47.45%;
+    --sidebar-ring: 230 100% 47.1%;
   }
 
   .dark {
@@ -60,7 +60,7 @@
     --popover: 222 47% 10%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 278.93 100% 47.45%; /* #9D00F2 */
+    --primary: 230 100% 47.1%; /* #0028F0 */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 222 22% 14%;
@@ -69,7 +69,7 @@
     --muted: 222 22% 14%;
     --muted-foreground: 220 10% 58%;
 
-    --accent: 275 45% 18%;
+    --accent: 230 45% 18%;
     --accent-foreground: 0 0% 98%;
 
     --destructive: 0 84.2% 60.2%;
@@ -77,16 +77,16 @@
 
     --border: 222 18% 18%;
     --input: 222 18% 18%;
-    --ring: 278.93 100% 47.45%;
+    --ring: 230 100% 47.1%;
 
     --sidebar-background: 222 47% 8%;
     --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 278.93 100% 47.45%;
+    --sidebar-primary: 230 100% 47.1%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 222 22% 14%;
     --sidebar-accent-foreground: 0 0% 98%;
     --sidebar-border: 222 18% 18%;
-    --sidebar-ring: 278.93 100% 47.45%;
+    --sidebar-ring: 230 100% 47.1%;
   }
 }
 
@@ -143,6 +143,48 @@
   .animate-fade-in {
     animation: fadeIn 0.6s ease-out forwards;
     opacity: 0;
+  }
+
+  /* Responsive % width for media blocks (image/video). */
+  .onmx-media-width {
+    width: calc(var(--onmx-media-w-mobile, 100) * 1%);
+  }
+
+  @media (min-width: 768px) {
+    .onmx-media-width {
+      width: calc(var(--onmx-media-w-desktop, 100) * 1%);
+    }
+  }
+
+  /* Hide scrollbar but keep scroll behavior */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Mux Player: hard-hide controls even on hover */
+  .mux-no-controls mux-player {
+    --controls: none !important;
+    --top-controls: none !important;
+    --center-controls: none !important;
+    --bottom-controls: none !important;
+    --media-object-fit: cover !important;
+    --media-object-position: center !important;
+    cursor: default !important;
+  }
+
+  .mux-no-controls mux-player::part(top),
+  .mux-no-controls mux-player::part(center),
+  .mux-no-controls mux-player::part(bottom) {
+    display: none !important;
+  }
+
+  /* Extra safety: hide only the gesture overlay (keeps media layer intact) */
+  .mux-no-controls mux-player::part(gesture-layer) {
+    display: none !important;
   }
 }
 

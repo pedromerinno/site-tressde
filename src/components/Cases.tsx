@@ -19,6 +19,8 @@ type CaseItem = {
   summary: string | null;
   year: number | null;
   cover_image_url: string | null;
+  cover_video_url: string | null;
+  cover_mux_playback_id: string | null;
   client_name: string | null;
   services: string[] | null;
   categories: CaseCategory[];
@@ -42,7 +44,7 @@ async function getCases(): Promise<CaseItem[]> {
   const { data, error } = await supabase
     .from("cases")
     .select(
-      "id,title,slug,summary,year,cover_image_url,services,status,published_at,clients(name),case_category_cases(case_categories(id,name,slug))",
+      "id,title,slug,summary,year,cover_image_url,cover_video_url,cover_mux_playback_id,services,status,published_at,clients(name),case_category_cases(case_categories(id,name,slug))",
     )
     .eq("status", "published")
     .not("published_at", "is", null)
@@ -59,6 +61,8 @@ async function getCases(): Promise<CaseItem[]> {
       summary: string | null;
       year: number | null;
       cover_image_url: string | null;
+      cover_video_url: string | null;
+      cover_mux_playback_id: string | null;
       services: string[] | null;
       clients: { name: string } | null;
       case_category_cases: Array<{ case_categories: CaseCategory | null }> | null;
@@ -69,6 +73,8 @@ async function getCases(): Promise<CaseItem[]> {
       summary: item.summary,
       year: item.year,
       cover_image_url: item.cover_image_url,
+      cover_video_url: item.cover_video_url,
+      cover_mux_playback_id: item.cover_mux_playback_id,
       services: item.services,
       client_name: item.clients?.name ?? null,
       categories:
@@ -110,6 +116,95 @@ async function getCaseCategories(): Promise<CaseCategory[]> {
       name: c.name,
       slug: c.slug,
     })) ?? []
+  );
+}
+
+/** Resolves the best video src for a case cover. Mux playback ids use the
+ *  MP4 static rendition (works in all browsers); plain URLs are used as-is. */
+function getCoverVideoSrc(item: CaseItem): string | null {
+  if (item.cover_mux_playback_id) {
+    // medium.mp4 = ~720p, good balance for a card preview
+    return `https://stream.mux.com/${item.cover_mux_playback_id}/medium.mp4`;
+  }
+  return item.cover_video_url || null;
+}
+
+/** Returns a Mux thumbnail URL for use as a poster when a playback id exists. */
+function getMuxThumbnail(playbackId: string): string {
+  return `https://image.mux.com/${playbackId}/thumbnail.jpg?width=960&fit_mode=smartcrop&time=0`;
+}
+
+/** Card-level component that handles hover-to-play video behaviour.
+ *  Renders just the media layers (poster + video) – must be placed inside
+ *  a positioned parent that defines the aspect ratio. */
+function CaseCardMedia({ item }: { item: CaseItem }) {
+  const videoRef = React.useRef<HTMLVideoElement | null>(null);
+  const [isHovered, setIsHovered] = React.useState(false);
+
+  const videoSrc = getCoverVideoSrc(item);
+  const hasVideo = Boolean(videoSrc);
+
+  // Determine the poster to show
+  const posterUrl = item.cover_image_url
+    ? toPublicObjectUrl(item.cover_image_url, "case-covers")
+    : item.cover_mux_playback_id
+      ? getMuxThumbnail(item.cover_mux_playback_id)
+      : null;
+
+  // Play / pause on hover
+  React.useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (isHovered) {
+      video.currentTime = 0;
+      video.play().catch(() => {});
+    } else {
+      video.pause();
+    }
+  }, [isHovered]);
+
+  return (
+    <>
+      {/* Invisible hover zone that covers the full card area */}
+      {hasVideo && (
+        <div
+          className="absolute inset-0 z-[1]"
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+        />
+      )}
+
+      {/* Poster image (always rendered as base layer) */}
+      {posterUrl ? (
+        <OptimizedImage
+          src={posterUrl}
+          alt=""
+          preset="card"
+          widths={[640, 800, 1024, 1280, 1600, 2000]}
+          sizes="(min-width:1024px) 33vw, (min-width:768px) 50vw, 100vw"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      ) : (
+        <div className="absolute inset-0 bg-gradient-to-br from-muted to-muted/40" />
+      )}
+
+      {/* Video layer – visible on hover, object-cover to fill without black bars */}
+      {hasVideo && (
+        <video
+          ref={videoRef}
+          src={videoSrc!}
+          muted
+          loop
+          playsInline
+          preload="none"
+          className={[
+            "absolute inset-0 h-full w-full object-cover transition-opacity duration-300",
+            isHovered ? "opacity-100" : "opacity-0",
+          ].join(" ")}
+        />
+      )}
+    </>
   );
 }
 
@@ -222,32 +317,21 @@ const Cases = () => {
                 }}
               >
                 <div className="relative aspect-[1/1] md:aspect-[5/4] bg-muted">
-                  {item.cover_image_url ? (
-                    <OptimizedImage
-                      src={toPublicObjectUrl(item.cover_image_url, "case-covers")}
-                      alt=""
-                      preset="card"
-                      widths={[640, 800, 1024, 1280, 1600, 2000]}
-                      // 1 col until md, 2 cols on md, 3 cols on lg.
-                      sizes="(min-width:1024px) 33vw, (min-width:768px) 50vw, 100vw"
-                      className="absolute inset-0 h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-muted to-muted/40" />
-                  )}
-                  {/* Base overlay (always on), stronger on hover */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/0 opacity-85 transition-opacity group-hover:opacity-95" />
-                  {/* Top legibility layer */}
-                  <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/10 to-black/0 opacity-75 transition-opacity group-hover:opacity-90" />
+                  <CaseCardMedia item={item} />
 
-                  <div className="absolute inset-x-0 top-0 p-8 md:p-10">
+                  {/* Base overlay (always on), stronger on hover */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/0 opacity-85 transition-opacity group-hover:opacity-95 pointer-events-none" />
+                  {/* Top legibility layer */}
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/10 to-black/0 opacity-75 transition-opacity group-hover:opacity-90 pointer-events-none" />
+
+                  <div className="absolute inset-x-0 top-0 p-8 md:p-10 pointer-events-none">
                     <div className="flex items-center justify-between gap-3 text-sm text-white/85">
                       <span className="font-body">{item.client_name ?? "Case"}</span>
                       {item.year ? <span className="tabular-nums">{item.year}</span> : null}
                     </div>
                   </div>
 
-                  <div className="absolute inset-x-0 bottom-0 p-8 md:p-10">
+                  <div className="absolute inset-x-0 bottom-0 p-8 md:p-10 pointer-events-none">
                     <h3 className="font-display font-semibold text-white text-lg md:text-xl leading-snug">
                       {item.title}
                     </h3>

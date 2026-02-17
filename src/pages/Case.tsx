@@ -1,13 +1,18 @@
 import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, Plus } from "lucide-react";
 
 import { supabase } from "@/lib/supabase/client";
-import { cn } from "@/lib/utils";
+import { getPrimaryCompany } from "@/lib/onmx/company";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 import { Button } from "@/components/ui/button";
 import Footer from "@/components/Footer";
+import { getPublicCaseBlocks } from "@/lib/case-builder/queries";
+import type { VideoContent } from "@/lib/case-builder/types";
+import { normalizeContainerContent } from "@/lib/case-builder/types";
+import PublicContainerBlock from "@/components/case-blocks-public/PublicContainerBlock";
+import PublicVideoBlock from "@/components/case-blocks-public/PublicVideoBlock";
 
 type CaseCategory = {
   id: string;
@@ -22,6 +27,7 @@ type CaseDetail = {
   summary: string | null;
   year: number | null;
   cover_image_url: string | null;
+  page_background: string | null;
   services: string[] | null;
   client_name: string | null;
   categories: CaseCategory[];
@@ -36,6 +42,26 @@ type CaseMediaItem = {
   sort_order: number | null;
 };
 
+type GalleryImage = {
+  id: string;
+  url: string;
+  alt: string;
+  cover?: boolean;
+};
+
+type GalleryVideo = {
+  id: string;
+  content: VideoContent;
+};
+
+type GalleryItem = GalleryImage | GalleryVideo;
+
+type ContainerMediaGrid = {
+  id: string;
+  columns: number;
+  cols: GalleryItem[][];
+};
+
 function toPublicObjectUrl(url: string, bucketId: string) {
   if (url.includes(`/storage/v1/object/public/${bucketId}/`)) return url;
   if (url.includes(`/storage/v1/object/${bucketId}/`)) {
@@ -47,14 +73,28 @@ function toPublicObjectUrl(url: string, bucketId: string) {
   return url;
 }
 
+function detectVideoProvider(url: string): VideoContent["provider"] {
+  if (/youtube\.com|youtu\.be/i.test(url)) return "youtube";
+  if (/vimeo\.com/i.test(url)) return "vimeo";
+  return "file";
+}
+
+function parseMuxPlaybackId(url: string): string | null {
+  const m = url.match(/stream\.mux\.com\/([^/?#]+)\.m3u8/i);
+  return m?.[1] ?? null;
+}
+
 async function getCaseBySlug(slug: string): Promise<CaseDetail> {
+  const company = await getPrimaryCompany();
+
   const { data, error } = await supabase
     .from("cases")
     .select(
-      "id,title,slug,summary,year,cover_image_url,services,status,published_at,clients(name),case_category_cases(case_categories(id,name,slug))",
+      "id,title,slug,summary,year,cover_image_url,page_background,services,status,published_at,clients(name),case_category_cases(case_categories(id,name,slug))",
     )
     .eq("slug", slug)
     .eq("status", "published")
+    .eq("owner_company_id", company.id)
     .not("published_at", "is", null)
     .limit(1)
     .maybeSingle();
@@ -69,6 +109,7 @@ async function getCaseBySlug(slug: string): Promise<CaseDetail> {
     summary: string | null;
     year: number | null;
     cover_image_url: string | null;
+    page_background: string | null;
     services: string[] | null;
     clients: { name: string } | null;
     case_category_cases: Array<{ case_categories: CaseCategory | null }> | null;
@@ -81,6 +122,7 @@ async function getCaseBySlug(slug: string): Promise<CaseDetail> {
     summary: row.summary,
     year: row.year,
     cover_image_url: row.cover_image_url,
+    page_background: row.page_background ?? null,
     services: row.services,
     client_name: row.clients?.name ?? null,
     categories:
@@ -104,7 +146,11 @@ async function getCaseMedia(caseId: string): Promise<CaseMediaItem[]> {
 
 export default function CasePage() {
   const { slug } = useParams<{ slug: string }>();
-  const [lightboxIndex, setLightboxIndex] = React.useState<number | null>(null);
+  const [dockMenu, setDockMenu] = React.useState(false);
+  const dockSentinelRef = React.useRef<HTMLDivElement | null>(null);
+  const [infoOpen, setInfoOpen] = React.useState(false);
+  const infoButtonRef = React.useRef<HTMLButtonElement | null>(null);
+  const infoMenuRef = React.useRef<HTMLDivElement | null>(null);
 
   const caseQuery = useQuery({
     queryKey: ["cases", "detail", slug],
@@ -120,269 +166,332 @@ export default function CasePage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const media = (mediaQuery.data ?? []).filter((m) => m.type !== "video");
-  const current = lightboxIndex != null ? media[lightboxIndex] : null;
+  const blocksQuery = useQuery({
+    queryKey: ["cases", caseQuery.data?.id, "blocks"],
+    queryFn: () => getPublicCaseBlocks(caseQuery.data!.id),
+    enabled: !!caseQuery.data?.id,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const containerGrids = React.useMemo<ContainerMediaGrid[]>(() => {
+    const blocks = blocksQuery.data ?? [];
+    const out: ContainerMediaGrid[] = [];
+
+    for (const block of blocks) {
+      if (block.type !== "container") continue;
+      const c = normalizeContainerContent(block.content as any);
+
+      const cols = c.slots.map((items, colIdx) => {
+        const outItems: GalleryItem[] = [];
+        items.forEach((item, itemIdx) => {
+          if (!item) return;
+          if (item.type === "image") {
+            const url = String((item as any)?.content?.url ?? "").trim();
+            if (!url) return;
+            const alt = String((item as any)?.content?.alt ?? "").trim();
+            const cover = Boolean((item as any)?.content?.cover);
+            outItems.push({
+              id: `${block.id}-${colIdx}-${itemIdx}`,
+              url,
+              alt,
+              cover,
+            });
+            return;
+          }
+          if (item.type === "video") {
+            const content = (item as any)?.content as VideoContent | undefined;
+            if (!content) return;
+            const hasMux = content.provider === "mux" && Boolean(content.muxPlaybackId);
+            const hasUrl = Boolean(String(content.url ?? "").trim());
+            if (!hasMux && !hasUrl) return;
+            outItems.push({
+              id: `${block.id}-${colIdx}-${itemIdx}`,
+              content,
+            });
+          }
+        });
+        return outItems;
+      });
+
+      const hasAny = cols.some((c) => c.length > 0);
+      if (!hasAny) continue;
+
+      out.push({ id: block.id, columns: c.columns, cols });
+    }
+
+    return out;
+  }, [blocksQuery.data]);
+
+  const fallbackMedia = React.useMemo<GalleryItem[]>(() => {
+    const media = mediaQuery.data ?? [];
+    return media
+      .filter((m) => Boolean(String(m.url ?? "").trim()))
+      .map((m) => {
+        if (m.type === "video") {
+          const muxPlaybackId = parseMuxPlaybackId(m.url);
+          const provider: VideoContent["provider"] = muxPlaybackId
+            ? "mux"
+            : detectVideoProvider(m.url);
+
+          const content: VideoContent = {
+            url: m.url,
+            provider,
+            aspect: "16/9",
+            muxPlaybackId: muxPlaybackId ?? undefined,
+            controls: true,
+            autoplay: false,
+            loop: false,
+          };
+
+          return { id: m.id, content } satisfies GalleryVideo;
+        }
+
+        return {
+          id: m.id,
+          url: m.url,
+          alt: m.alt_text ?? m.title ?? "",
+        } satisfies GalleryImage;
+      });
+  }, [mediaQuery.data]);
+
+  const hasContainerLayout = containerGrids.length > 0;
+  const hasAnyMedia = hasContainerLayout || fallbackMedia.length > 0;
 
   React.useEffect(() => {
-    if (lightboxIndex == null) return;
+    if (!infoOpen) return;
 
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setLightboxIndex(null);
-        return;
-      }
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setInfoOpen(false);
+    }
 
-      if (event.key === "ArrowLeft") {
-        event.preventDefault();
-        setLightboxIndex((idx) => (idx == null ? idx : (idx - 1 + media.length) % media.length));
-      }
+    function onPointerDown(e: MouseEvent | PointerEvent) {
+      const target = e.target as Node | null;
+      if (!target) return;
+      if (infoMenuRef.current?.contains(target)) return;
+      if (infoButtonRef.current?.contains(target)) return;
+      setInfoOpen(false);
+    }
 
-      if (event.key === "ArrowRight") {
-        event.preventDefault();
-        setLightboxIndex((idx) => (idx == null ? idx : (idx + 1) % media.length));
-      }
+    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("pointerdown", onPointerDown, true);
     };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [lightboxIndex, media.length]);
+  }, [infoOpen]);
 
   React.useEffect(() => {
-    // Reset lightbox when navigating between cases.
-    setLightboxIndex(null);
-  }, [slug]);
+    const el = dockSentinelRef.current;
+    if (!el) return;
+
+    // When the sentinel is visible near the bottom, dock the menu so it
+    // stops before the footer (instead of overlapping it).
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        setDockMenu(entry?.isIntersecting ?? false);
+      },
+      {
+        root: null,
+        threshold: 0,
+        // account for menu height + bottom offset
+        rootMargin: "0px 0px -96px 0px",
+      },
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [containerGrids.length, fallbackMedia.length, caseQuery.data?.id]);
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <header className="px-6 md:px-12 lg:px-20 py-6 border-b border-border/60">
-        <div className="max-w-6xl mx-auto flex items-center justify-between gap-6">
-          <Link to="/" className="font-display text-xl font-bold text-primary tracking-tight">
-            ONMX®
-          </Link>
-          <Link
-            to="/#cases"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Voltar aos cases
-          </Link>
-        </div>
-      </header>
+    <main
+      className="min-h-screen text-foreground"
+      style={{
+        backgroundColor:
+          !caseQuery.isLoading && caseQuery.data?.page_background
+            ? caseQuery.data.page_background
+            : "hsl(var(--background))",
+      }}
+    >
+      <section className="p-0">
+        {/* Top-left dropdown */}
+        <div className="fixed top-4 left-4 z-50">
+          <div className="relative">
+            <button
+              ref={infoButtonRef}
+              type="button"
+              onClick={() => setInfoOpen((v) => !v)}
+              className={[
+                "h-11 w-11 rounded-full",
+                "bg-black/40 text-white",
+                "backdrop-blur-xl",
+                "ring-1 ring-white/15",
+                "shadow-lg shadow-black/20",
+                "grid place-items-center",
+                "transition-colors",
+                "hover:bg-black/55",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+              ].join(" ")}
+              aria-label="Abrir informações do projeto"
+              aria-expanded={infoOpen}
+            >
+              <Plus
+                className={[
+                  "h-5 w-5 transition-transform",
+                  infoOpen ? "rotate-45" : "rotate-0",
+                ].join(" ")}
+                aria-hidden="true"
+              />
+            </button>
 
-      <section className="px-6 md:px-12 lg:px-20 py-10 md:py-12">
-        <div className="max-w-6xl mx-auto">
-          {caseQuery.isLoading ? (
-            <div className="rounded-3xl border border-border bg-card overflow-hidden">
-              <div className="aspect-[16/9] bg-muted animate-pulse" />
-              <div className="p-8 md:p-10 space-y-4">
-                <div className="h-4 w-40 bg-muted rounded animate-pulse" />
-                <div className="h-10 w-3/4 bg-muted rounded animate-pulse" />
-                <div className="h-4 w-2/3 bg-muted rounded animate-pulse" />
+            {infoOpen ? (
+              <div
+                ref={infoMenuRef}
+                role="dialog"
+                aria-label="Informações do projeto"
+                className={[
+                  "absolute left-0 mt-3 w-[min(380px,calc(100vw-2rem))]",
+                  "rounded-2xl",
+                  "bg-black/70 text-white",
+                  "backdrop-blur-md",
+                  "ring-1 ring-white/15",
+                  "shadow-xl shadow-black/30",
+                  "p-4",
+                ].join(" ")}
+              >
+                <div className="space-y-3 text-sm">
+                  <div>
+                    <div className="text-[11px] text-white/60">Cliente</div>
+                    <div className="font-medium">
+                      {caseQuery.data?.client_name ?? "—"}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-[11px] text-white/60">Projeto</div>
+                    <div className="font-medium">
+                      {caseQuery.data?.title ?? "—"}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-[11px] text-white/60">Descrição</div>
+                    <div className="text-white/90 leading-relaxed line-clamp-4">
+                      {caseQuery.data?.summary ?? "—"}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-[11px] text-white/60">Ano</div>
+                      <div className="font-medium tabular-nums">
+                        {caseQuery.data?.year ? String(caseQuery.data.year) : "—"}
+                      </div>
+                    </div>
+                    <div className="text-[11px] text-white/50">ESC para fechar</div>
+                  </div>
+                </div>
               </div>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="relative w-full pb-28">
+          {caseQuery.isLoading ? (
+            <div className="space-y-0">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="h-64 md:h-80 bg-muted animate-pulse" />
+              ))}
             </div>
           ) : caseQuery.isError || !caseQuery.data ? (
-            <div className="rounded-3xl border border-border bg-card p-10 md:p-14 text-center">
-              <h1 className="font-display text-2xl md:text-3xl font-semibold">Case não encontrado</h1>
-              <p className="mt-3 text-secondary-foreground leading-relaxed max-w-xl mx-auto">
-                Esse projeto pode ter sido removido ou ainda não foi publicado.
-              </p>
-              <div className="mt-8">
-                <Link to="/#cases" className="inline-flex rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:brightness-110 transition-all">
-                  Ver todos os cases
-                </Link>
-              </div>
+            <div className="border border-border bg-card p-8 text-sm text-muted-foreground">
+              Case não encontrado (ou ainda não publicado).
+            </div>
+          ) : !hasAnyMedia ? (
+            <div className="border border-border bg-card p-8 text-sm text-muted-foreground">
+              Esse case ainda não tem mídia.
             </div>
           ) : (
-            <>
-              <div className="rounded-3xl border border-border bg-card overflow-hidden">
-                <div className="relative aspect-[16/9] bg-muted">
-                  {caseQuery.data.cover_image_url ? (
+            hasContainerLayout ? (
+              <div className="space-y-0">
+                {(blocksQuery.data ?? [])
+                  .filter((b) => b.type === "container")
+                  .map((block) => (
+                    <PublicContainerBlock
+                      key={block.id}
+                      content={normalizeContainerContent(block.content as any)}
+                    />
+                  ))}
+              </div>
+            ) : (
+              <div>
+                {fallbackMedia.map((item) =>
+                  "url" in item ? (
                     <OptimizedImage
-                      src={toPublicObjectUrl(caseQuery.data.cover_image_url, "case-covers")}
-                      alt=""
-                      preset="hero"
-                      priority
-                      widths={[960, 1440, 1920]}
+                      key={item.id}
+                      src={item.url}
+                      alt={item.alt}
+                      preset="gallery"
+                      widths={[640, 960, 1280, 1920]}
                       sizes="100vw"
-                      className="absolute inset-0 h-full w-full object-cover"
+                      className="w-full h-auto"
                     />
                   ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-muted to-muted/40" />
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/20 to-black/40" />
-                  <div className="absolute inset-x-0 bottom-0 p-8 md:p-10">
-                    <div className="flex flex-wrap items-center gap-3 text-sm text-white/85">
-                      {caseQuery.data.client_name ? (
-                        <span className="font-medium">{caseQuery.data.client_name}</span>
-                      ) : null}
-                      {caseQuery.data.year ? <span className="text-white/70">· {caseQuery.data.year}</span> : null}
+                    <div key={item.id}>
+                      <PublicVideoBlock content={item.content} />
                     </div>
-                    <h1 className="mt-3 font-display text-3xl md:text-5xl font-bold tracking-tight text-white leading-[1.05]">
-                      {caseQuery.data.title}
-                    </h1>
-                  </div>
-                </div>
-
-                <div className="p-8 md:p-10">
-                  {!!caseQuery.data.categories.length && (
-                    <div className="flex flex-wrap gap-2.5">
-                      {caseQuery.data.categories.map((cat) => (
-                        <span
-                          key={cat.id}
-                          className="px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium border border-primary/15"
-                        >
-                          {cat.name}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  {caseQuery.data.summary ? (
-                    <p className={cn("mt-6 text-secondary-foreground leading-relaxed", "max-w-3xl")}>
-                      {caseQuery.data.summary}
-                    </p>
-                  ) : null}
-
-                  {!!caseQuery.data.services?.length && (
-                    <div className="mt-8 flex flex-wrap gap-2.5">
-                      {caseQuery.data.services.map((s) => (
-                        <span
-                          key={s}
-                          className="px-4 py-2 rounded-full bg-card text-foreground text-sm font-medium border border-border"
-                        >
-                          {s}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                  ),
+                )}
               </div>
-
-              <div className="mt-14 md:mt-16">
-                <div className="flex items-end justify-between gap-6">
-                  <div>
-                    <h2 className="font-display text-2xl md:text-3xl font-semibold tracking-tight">
-                      Galeria
-                    </h2>
-                    <p className="mt-2 text-secondary-foreground">
-                      Imagens e peças do projeto.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-8">
-                  {mediaQuery.isLoading ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {Array.from({ length: 9 }).map((_, i) => (
-                        <div
-                          key={i}
-                          className={cn(
-                            "rounded-2xl bg-muted animate-pulse",
-                            i % 3 === 0 ? "h-56" : i % 3 === 1 ? "h-72" : "h-64",
-                          )}
-                        />
-                      ))}
-                    </div>
-                  ) : mediaQuery.isError ? (
-                    <div className="rounded-2xl border border-border bg-card p-8">
-                      <p className="text-secondary-foreground">
-                        Não foi possível carregar a galeria agora.
-                      </p>
-                    </div>
-                  ) : media.length === 0 ? (
-                    <div className="rounded-2xl border border-border bg-card p-8">
-                      <p className="text-secondary-foreground">Esse case ainda não tem imagens.</p>
-                    </div>
-                  ) : (
-                    <div className="columns-1 sm:columns-2 lg:columns-3 gap-4">
-                      {media.map((item, idx) => (
-                        <button
-                          key={item.id}
-                          type="button"
-                          className="group mb-4 w-full break-inside-avoid overflow-hidden rounded-2xl bg-muted focus:outline-none focus:ring-2 focus:ring-ring"
-                          onClick={() => setLightboxIndex(idx)}
-                          aria-label="Abrir imagem"
-                        >
-                          <OptimizedImage
-                            src={item.url}
-                            alt={item.alt_text ?? item.title ?? ""}
-                            preset="gallery"
-                            widths={[384, 512, 768, 1024, 1280]}
-                            sizes="(min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
-                            className="w-full h-auto transition-transform duration-500 group-hover:scale-[1.02]"
-                          />
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </>
+            )
           )}
+
+          {/* Dock sentinel (end of case content) */}
+          <div ref={dockSentinelRef} className="h-1" />
+
+          {/* Floating menu (fixed, docks at end) */}
+          <div
+            className={[
+              dockMenu
+                ? "absolute bottom-4 left-1/2 -translate-x-1/2"
+                : "fixed bottom-4 left-1/2 -translate-x-1/2",
+              "z-50 w-[min(520px,calc(100vw-2rem))] px-0 pointer-events-none",
+            ].join(" ")}
+          >
+            <div className="pointer-events-auto flex items-center justify-center gap-2">
+              <div className="flex-1 rounded-full bg-background/80 backdrop-blur-md ring-1 ring-border/70 shadow-lg shadow-black/10">
+                <div className="h-12 px-2 sm:px-3 flex items-center justify-between gap-3">
+                  <Button
+                    asChild
+                    variant="ghost"
+                    className="h-10 px-3 rounded-full hover:bg-black/[0.04]"
+                  >
+                    <Link to="/#cases" aria-label="Voltar aos cases">
+                      <ChevronLeft className="h-4 w-4 mr-1" aria-hidden="true" />
+                      <span className="text-sm font-medium">Voltar</span>
+                    </Link>
+                  </Button>
+
+                  <div className="min-w-0 flex-1 px-1 text-center">
+                    <div className="text-sm font-medium truncate">
+                      {caseQuery.data?.title ?? ""}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                asChild
+                className="h-12 px-4 rounded-full shadow-lg shadow-black/10"
+              >
+                <Link to="/#contato">Fale com a gente</Link>
+              </Button>
+            </div>
+          </div>
         </div>
       </section>
 
       <Footer />
-
-      {/* Lightbox */}
-      {current && (
-        <div className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-sm">
-          <button
-            type="button"
-            className="absolute inset-0"
-            onClick={() => setLightboxIndex(null)}
-            aria-label="Fechar"
-          />
-
-          <div className="relative z-10 h-full w-full flex items-center justify-center p-6 md:p-10">
-            <div className="relative w-full max-w-6xl">
-              <OptimizedImage
-                src={current.url}
-                alt={current.alt_text ?? current.title ?? ""}
-                preset="lightbox"
-                priority
-                className="mx-auto max-h-[72vh] md:max-h-[78vh] w-auto max-w-full rounded-2xl shadow-2xl"
-              />
-
-              {media.length > 1 && (
-                <>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="icon"
-                    onClick={() =>
-                      setLightboxIndex((idx) => (idx == null ? idx : (idx - 1 + media.length) % media.length))
-                    }
-                    className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/10 hover:bg-white/15 text-white border-white/15"
-                    aria-label="Imagem anterior"
-                  >
-                    <ChevronLeft className="h-5 w-5" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="icon"
-                    onClick={() =>
-                      setLightboxIndex((idx) => (idx == null ? idx : (idx + 1) % media.length))
-                    }
-                    className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/10 hover:bg-white/15 text-white border-white/15"
-                    aria-label="Próxima imagem"
-                  >
-                    <ChevronRight className="h-5 w-5" />
-                  </Button>
-                </>
-              )}
-
-              <div className="mt-4 flex items-center justify-center text-white/70 text-sm">
-                {lightboxIndex != null ? (
-                  <span className="tabular-nums">
-                    {lightboxIndex + 1} / {media.length}
-                  </span>
-                ) : null}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </main>
   );
 }

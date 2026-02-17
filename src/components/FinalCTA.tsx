@@ -87,7 +87,7 @@ const FinalCTA = () => {
                   transition={{ duration: 0.6, delay: 0.1 }}
                   className="mt-8 md:mt-10 text-base md:text-lg text-foreground/70 leading-relaxed max-w-2xl mx-auto"
                 >
-                  Converse com a ONMX e tenha um plano completo para comunicar, lançar
+                  Converse com a TRESSDE e tenha um plano completo para comunicar, lançar
                   e evoluir com consistência.
                 </motion.p>
 

@@ -38,10 +38,15 @@ async function getClientsForMarquee(): Promise<ClientLogo[]> {
   );
 }
 
+const LOGO_COLOR = "hsl(40,5%,60%)";
+
 function LogoItem({ client }: { client: ClientLogo }) {
   return (
     <li className="flex items-center justify-center">
-      <div className="flex items-center justify-center h-10 md:h-12 px-2 text-primary/80">
+      <div
+        className="flex items-center justify-center h-10 md:h-12 px-2"
+        style={{ color: LOGO_COLOR }}
+      >
         {client.svg ? (
           <span
             className="[&_svg]:h-7 md:[&_svg]:h-8 [&_svg]:w-auto [&_svg]:max-w-[160px] [&_svg_*]:fill-current [&_svg_*]:stroke-current"
@@ -53,11 +58,17 @@ function LogoItem({ client }: { client: ClientLogo }) {
             src={client.src}
             alt={client.name}
             preset="logo"
-            // Assumes logos are mostly monochrome; this tints them to purple.
-            className="h-7 md:h-8 w-auto object-contain opacity-90 brightness-0 saturate-[100%] invert-[17%] sepia-[95%] saturate-[6500%] hue-rotate-[265deg] brightness-[0.92] contrast-[1.06]"
+            className="h-7 md:h-8 w-auto object-contain"
+            style={{
+              filter:
+                "brightness(0) sepia(0.1) saturate(0.15) hue-rotate(-15deg) brightness(0.8)",
+            }}
           />
         ) : (
-          <span className="font-display text-sm font-medium tracking-wide whitespace-nowrap text-primary/80">
+          <span
+            className="font-display text-sm font-medium tracking-wide whitespace-nowrap"
+            style={{ color: LOGO_COLOR }}
+          >
             {client.name}
           </span>
         )}
@@ -84,19 +95,22 @@ export default function ClientLogosMarquee() {
   }, [clients]);
 
   return (
-    <section aria-label="Clientes" className="bg-[#f3eaf5] overflow-x-hidden">
+    <section aria-label="Clientes" className="bg-background overflow-x-hidden">
       <div className="relative w-full px-6 md:px-12 lg:px-20 py-8 md:py-10">
         <h2 className="sr-only">Clientes</h2>
 
-        <div className="relative overflow-hidden rounded-2xl bg-[#f3eaf5]">
+        <div className="relative overflow-hidden rounded-2xl bg-background">
           {/* Edge fade */}
-          <div className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-[#f3eaf5] to-transparent z-10" />
-          <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-[#f3eaf5] to-transparent z-10" />
+          <div className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-background to-transparent z-10" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-background to-transparent z-10" />
 
           <div className="group relative flex items-center py-6">
             {isLoading && (
               <div className="absolute inset-0 grid place-items-center">
-                <span className="text-primary/70 font-body text-sm">
+                <span
+                  className="font-body text-sm"
+                  style={{ color: LOGO_COLOR }}
+                >
                   Carregando clientes…
                 </span>
               </div>

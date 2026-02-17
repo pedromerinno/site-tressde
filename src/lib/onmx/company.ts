@@ -8,10 +8,10 @@ export type PrimaryCompany = {
 };
 
 const PRIMARY_COMPANY_SLUG =
-  (import.meta.env.VITE_PRIMARY_COMPANY_SLUG as string | undefined) ?? "onmx";
+  (import.meta.env.VITE_PRIMARY_COMPANY_SLUG as string | undefined) ?? "tressde";
 
 export async function getPrimaryCompany(): Promise<PrimaryCompany> {
-  // Single-company site: prefer a stable slug (defaults to "onmx").
+  // Single-company site: prefer a stable slug (defaults to "tressde").
   const preferred = await supabase
     .from("companies")
     .select("id,group_id,name,slug,is_active,created_at")
