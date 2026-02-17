@@ -18,6 +18,7 @@ import CaseBuilder from "./pages/admin/CaseBuilder";
 import CasePreview from "./pages/admin/CasePreview";
 import AdminSite from "./pages/admin/AdminSite";
 import { SiteMeta } from "@/components/SiteMeta";
+import { AppErrorBoundary } from "@/components/AppErrorBoundary";
 
 const queryClient = new QueryClient();
 
@@ -51,16 +52,18 @@ function AppRoutes() {
 }
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <CaseCursorStyles />
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <AppErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <CaseCursorStyles />
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </AppErrorBoundary>
 );
 
 export default App;
