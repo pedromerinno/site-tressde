@@ -195,11 +195,11 @@ function FloatingNavbarContent() {
 }
 
 export default function FloatingNavbar() {
-  const { isInCasesSection } = useCasesSection();
+  const { showFilterChips } = useCasesSection();
 
   return (
     <AnimatePresence mode="wait">
-      {isInCasesSection ? (
+      {showFilterChips ? (
         <FloatingCategoryFilter key="filter" />
       ) : (
         <FloatingNavbarContent key="nav" />

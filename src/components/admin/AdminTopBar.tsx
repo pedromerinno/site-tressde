@@ -11,7 +11,7 @@ type AdminTopBarProps = {
   onSignOut: () => void | Promise<void>;
 };
 
-export default function AdminTopBar({ brand = "Onmx", onSignOut }: AdminTopBarProps) {
+export default function AdminTopBar({ brand = "TRESSDE®", onSignOut }: AdminTopBarProps) {
   const navigate = useNavigate();
 
   return (

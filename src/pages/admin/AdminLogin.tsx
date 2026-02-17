@@ -57,9 +57,9 @@ export default function AdminLogin() {
   return (
     <main className="min-h-screen bg-background text-foreground flex items-center justify-center px-6 py-16">
       <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8">
-        <h1 className="font-display text-2xl font-semibold">Admin ONMX®</h1>
+        <h1 className="font-display text-2xl font-semibold">Admin TRESSDE®</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Entre com seu usuário administrador para gerenciar conteúdos.
+          Entre com seu usuário administrador para gerenciar o site da TRESSDE®.
         </p>
 
         <form onSubmit={onSubmit} className="mt-8 space-y-4">

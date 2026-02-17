@@ -144,6 +144,8 @@ async function getCaseMedia(caseId: string): Promise<CaseMediaItem[]> {
   return (data as CaseMediaItem[]) ?? [];
 }
 
+const FROM_CASE_PAGE_KEY = "tressde_from_case_page";
+
 export default function CasePage() {
   const { slug } = useParams<{ slug: string }>();
   const [dockMenu, setDockMenu] = React.useState(false);
@@ -151,6 +153,14 @@ export default function CasePage() {
   const [infoOpen, setInfoOpen] = React.useState(false);
   const infoButtonRef = React.useRef<HTMLButtonElement | null>(null);
   const infoMenuRef = React.useRef<HTMLDivElement | null>(null);
+
+  React.useEffect(() => {
+    try {
+      if (typeof sessionStorage !== "undefined") sessionStorage.setItem(FROM_CASE_PAGE_KEY, "1");
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const caseQuery = useQuery({
     queryKey: ["cases", "detail", slug],
