@@ -2,13 +2,13 @@ const Footer = () => {
   return (
     <footer className="bg-primary text-primary-foreground">
       <div className="px-6 md:px-12 lg:px-20 py-16 md:py-20">
-        <div className="mx-auto w-full max-w-screen-2xl">
+        <div className="mx-auto w-full max-w-screen-2xl @container">
           <div className="min-h-[28rem] md:min-h-[34rem] flex flex-col justify-between gap-10">
             <div className="flex-1 flex items-end justify-center overflow-hidden pt-10 md:pt-14 lg:pt-16 pb-6 md:pb-8">
               <h2
-                className="w-full font-body font-semibold leading-none tracking-[-0.12em] [font-kerning:none] text-primary-foreground text-center md:text-left"
+                className="w-full font-body font-semibold leading-none tracking-[-0.12em] [font-kerning:none] text-primary-foreground text-center md:text-left min-w-0"
               >
-                <span className="block whitespace-nowrap text-[clamp(6.75rem,22vw,23.5rem)]">
+                <span className="block whitespace-nowrap text-[clamp(4rem,20cqw,23.5rem)]">
                   TRESSDE®
                 </span>
               </h2>

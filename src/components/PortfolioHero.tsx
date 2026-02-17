@@ -1,7 +1,7 @@
 function PortfolioHero() {
   return (
     <header id="inicio" className="bg-background">
-      <div className="px-6 md:px-10 lg:px-16 pt-8 md:pt-10">
+      <div className="px-6 md:px-10 lg:px-16 pt-8 md:pt-10 pb-10 md:pb-16">
         <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-6 md:gap-12">
           <a
             href="#inicio"

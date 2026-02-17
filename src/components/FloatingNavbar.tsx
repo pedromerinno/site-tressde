@@ -2,6 +2,7 @@ import * as React from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Globe } from "lucide-react";
 import { useCasesSection, ALL_ID } from "@/contexts/CasesSectionContext";
+import { useContactModal } from "@/contexts/ContactModalContext";
 
 type NavItem = {
   label: string;
@@ -90,6 +91,7 @@ function FloatingCategoryFilter() {
 function FloatingNavbarContent() {
   const reduceMotion = useReducedMotion();
   const [scrolled, setScrolled] = React.useState(false);
+  const contactModal = useContactModal();
 
   React.useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY >= SCROLL_THRESHOLD);
@@ -117,12 +119,22 @@ function FloatingNavbarContent() {
         <ul className="flex items-center gap-6">
           {navItems.map((item) => (
             <li key={item.href}>
-              <a
-                href={item.href}
-                className="rounded-full px-2 py-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-              >
-                {item.label}
-              </a>
+              {item.href === "#contato" && contactModal ? (
+                <button
+                  type="button"
+                  onClick={contactModal.openContactModal}
+                  className="rounded-full px-2 py-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                >
+                  {item.label}
+                </button>
+              ) : (
+                <a
+                  href={item.href}
+                  className="rounded-full px-2 py-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                >
+                  {item.label}
+                </a>
+              )}
             </li>
           ))}
         </ul>
@@ -137,12 +149,22 @@ function FloatingNavbarContent() {
           <Globe className="h-4 w-4" aria-hidden="true" />
         </button>
 
-        <a
-          href="#contato"
-          className="inline-flex h-9 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-        >
-          Falar com a TRESSDE®
-        </a>
+        {contactModal ? (
+          <button
+            type="button"
+            onClick={contactModal.openContactModal}
+            className="inline-flex h-9 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            Falar com a TRESSDE®
+          </button>
+        ) : (
+          <a
+            href="#contato"
+            className="inline-flex h-9 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            Falar com a TRESSDE®
+          </a>
+        )}
       </div>
     </div>
   );

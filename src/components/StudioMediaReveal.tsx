@@ -5,12 +5,12 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useQuery } from "@tanstack/react-query";
 import MuxPlayer from "@mux/mux-player-react";
 import {
-  getPublicCases,
   getStudioRevealDisplayItems,
   toPublicObjectUrl,
   type StudioRevealDisplayItem,
 } from "@/lib/case-builder/queries";
 import { OptimizedImage } from "@/components/ui/optimized-image";
+import PortfolioHero from "@/components/PortfolioHero";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -19,6 +19,7 @@ const SCROLL_VH = 220;
 export default function StudioMediaReveal() {
   const sectionRef = React.useRef<HTMLElement>(null);
   const viewportRef = React.useRef<HTMLDivElement>(null);
+  const headerRef = React.useRef<HTMLDivElement>(null);
   const heroRef = React.useRef<HTMLDivElement>(null);
   const centerRef = React.useRef<HTMLDivElement>(null);
   const leftRef = React.useRef<HTMLDivElement>(null);
@@ -26,12 +27,6 @@ export default function StudioMediaReveal() {
   const leftLabelRef = React.useRef<HTMLParagraphElement>(null);
   const centerLabelRef = React.useRef<HTMLParagraphElement>(null);
   const rightLabelRef = React.useRef<HTMLParagraphElement>(null);
-
-  const { data: cases = [], isLoading } = useQuery({
-    queryKey: ["cases", "public"],
-    queryFn: getPublicCases,
-    staleTime: 5 * 60 * 1000,
-  });
 
   const { data: displayItems, isLoading: displayLoading } = useQuery({
     queryKey: ["studio-reveal-display"],
@@ -61,11 +56,12 @@ export default function StudioMediaReveal() {
     const mm = gsap.matchMedia();
 
     mm.add("(min-width: 768px)", () => {
-      // Initial clip: big cinematic rectangle near top of viewport (mascara mais alta)
+      // Initial clip: big cinematic rectangle starting below the header
       const computeInitialClip = () => {
         const vW = viewport.clientWidth;
         const vH = viewport.clientHeight;
-        const top = vH * 0.04;
+        const headerH = headerRef.current?.offsetHeight ?? vH * 0.08;
+        const top = headerH + 8;
         const bottom = vH * 0.12;
         const side = vW * 0.025;
         return `inset(${top}px ${side}px ${bottom}px ${side}px round 12px)`;
@@ -84,9 +80,7 @@ export default function StudioMediaReveal() {
         scrollTrigger: {
           trigger: section,
           start: "top top",
-          end: `+=${SCROLL_VH}vh`,
-          pin: viewport,
-          pinSpacing: true,
+          end: "bottom bottom",
           scrub: 3.5,
           invalidateOnRefresh: true,
         },
@@ -136,20 +130,20 @@ export default function StudioMediaReveal() {
     return () => mm.revert();
   }, [displayItems, featured?.id]);
 
-  if (isLoading || displayLoading) {
+  if (displayLoading) {
     return (
-      <section className="relative bg-background">
-        <div className="relative flex h-screen w-full flex-col overflow-hidden">
-          {/* Hero skeleton — espelha o clip-path inicial */}
-          <div className="absolute inset-0 hidden md:flex items-start justify-center pt-[4vh] px-[2.5vw] pb-[12vh]">
-            <div className="h-full w-full rounded-xl bg-muted/40 animate-pulse" />
+      <section className="relative bg-background" style={{ height: `${SCROLL_VH}vh` }}>
+        <div className="sticky top-0 flex h-screen w-full flex-col overflow-hidden">
+          {/* Header */}
+          <div className="relative z-40 shrink-0">
+            <PortfolioHero />
           </div>
 
-          {/* Spacer (mesmo do layout real) */}
+          {/* Spacer */}
           <div className="min-h-0 flex-1 max-h-[28vh]" aria-hidden />
 
           {/* Cards skeleton */}
-          <div className="flex shrink-0 items-center justify-center px-2 pb-8 md:px-4">
+          <div className="flex shrink-0 items-center justify-center px-2 pb-8 md:px-4 pt-2">
             <div className="w-full max-w-[min(98vw,2200px)]">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-3">
                 {[0, 1, 2].map((i) => (
@@ -182,13 +176,18 @@ export default function StudioMediaReveal() {
   }
 
   return (
-    <section ref={sectionRef} className="relative bg-background">
-      <div ref={viewportRef} className="relative flex h-screen w-full flex-col overflow-hidden">
-        {/* Área do hero (container inicial) — topo (max limita para grid ficar mais próximo do menu) */}
+    <section ref={sectionRef} className="relative bg-background" style={{ height: `${SCROLL_VH}vh` }}>
+      <div ref={viewportRef} className="sticky top-0 flex h-screen w-full flex-col overflow-hidden">
+        {/* Header TRESSDE® — fica acima do overlay z-30 */}
+        <div ref={headerRef} className="relative z-40 shrink-0">
+          <PortfolioHero />
+        </div>
+
+        {/* Spacer — altura limitada para o grid ficar mais alto na viewport */}
         <div className="min-h-0 flex-1 max-h-[28vh]" aria-hidden />
 
-        {/* Grid — abaixo do container inicial */}
-        <div className="flex shrink-0 items-center justify-center px-2 pb-8 md:px-4">
+        {/* Grid — abaixo do header */}
+        <div className="flex shrink-0 items-center justify-center px-2 pb-8 md:px-4 pt-2">
           <div className="w-full max-w-[min(98vw,2200px)]">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-3">
               <div className="relative z-10 flex flex-col items-start gap-2">
@@ -287,32 +286,10 @@ function MediaBlock({ item }: { item: StudioRevealDisplayItem }) {
         : null);
 
   if (item.cover_mux_playback_id) {
-    return (
-      <div className="mux-no-controls h-full w-full">
-        <MuxPlayer
-          playbackId={item.cover_mux_playback_id}
-          muted
-          loop
-          playsInline
-          preload="auto"
-          autoPlay
-          className="h-full w-full object-cover"
-        />
-      </div>
-    );
+    return <LazyMuxVideo playbackId={item.cover_mux_playback_id} poster={posterUrl} />;
   }
   if (item.cover_video_url) {
-    return (
-      <video
-        src={item.cover_video_url}
-        poster={posterUrl ?? undefined}
-        muted
-        loop
-        playsInline
-        autoPlay
-        className="h-full w-full object-cover"
-      />
-    );
+    return <LazyNativeVideo src={item.cover_video_url} poster={posterUrl} />;
   }
   const imageSrc =
     item.cover_image_url
@@ -332,5 +309,78 @@ function MediaBlock({ item }: { item: StudioRevealDisplayItem }) {
   }
   return (
     <div className="h-full w-full bg-gradient-to-br from-muted to-muted/60" />
+  );
+}
+
+/** Observes when the element enters the viewport (with margin) and flips `isVisible` once. */
+function useInView(rootMargin = "200px") {
+  const ref = React.useRef<HTMLDivElement>(null);
+  const [isVisible, setVisible] = React.useState(false);
+
+  React.useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [rootMargin]);
+
+  return { ref, isVisible };
+}
+
+function LazyMuxVideo({ playbackId, poster }: { playbackId: string; poster: string | null }) {
+  const { ref, isVisible } = useInView();
+
+  return (
+    <div ref={ref} className="mux-no-controls h-full w-full">
+      {isVisible ? (
+        <MuxPlayer
+          playbackId={playbackId}
+          poster={poster ?? undefined}
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          autoPlay
+          className="h-full w-full object-cover"
+        />
+      ) : poster ? (
+        <img src={poster} alt="" className="h-full w-full object-cover" />
+      ) : (
+        <div className="h-full w-full bg-muted/40" />
+      )}
+    </div>
+  );
+}
+
+function LazyNativeVideo({ src, poster }: { src: string; poster: string | null }) {
+  const { ref, isVisible } = useInView();
+
+  return (
+    <div ref={ref} className="h-full w-full">
+      {isVisible ? (
+        <video
+          src={src}
+          poster={poster ?? undefined}
+          muted
+          loop
+          playsInline
+          autoPlay
+          className="h-full w-full object-cover"
+        />
+      ) : poster ? (
+        <img src={poster} alt="" className="h-full w-full object-cover" />
+      ) : (
+        <div className="h-full w-full bg-muted/40" />
+      )}
+    </div>
   );
 }
