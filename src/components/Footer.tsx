@@ -1,7 +1,13 @@
 import { useTranslation } from "@/i18n";
+import { useContactModal, ContactPopover } from "@/contexts/ContactModalContext";
+
+const footerLetsTalkClass =
+  "mt-16 text-base font-semibold tracking-wide text-primary-foreground underline decoration-2 underline-offset-4 hover:decoration-primary-foreground/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground/30 focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded";
 
 const Footer = () => {
   const { t } = useTranslation();
+  const contactModal = useContactModal();
+
   return (
     <footer id="site-footer" className="bg-primary text-primary-foreground">
       <div className="px-6 md:px-12 lg:px-20 py-16 md:py-20">
@@ -15,12 +21,17 @@ const Footer = () => {
                   TRESSDE®
                 </span>
               </h2>
-              <a
-                href="#contato"
-                className="mt-16 text-base font-semibold tracking-wide text-primary-foreground underline decoration-2 underline-offset-4 hover:decoration-primary-foreground/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground/30 focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded"
-              >
-                {t("footerLetsTalk")}
-              </a>
+              {contactModal ? (
+                <ContactPopover>
+                  <button type="button" className={footerLetsTalkClass}>
+                    {t("footerLetsTalk")}
+                  </button>
+                </ContactPopover>
+              ) : (
+                <a href="#contato" className={footerLetsTalkClass}>
+                  {t("footerLetsTalk")}
+                </a>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-center gap-4">

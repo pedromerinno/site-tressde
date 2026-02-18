@@ -8,6 +8,37 @@ const DEFAULTS = {
   ogImage: "",
 };
 
+/** Converts hex (#RRGGBB) to HSL string for CSS: "H S% L%" */
+function hexToHsl(hex: string): string | null {
+  const cleaned = hex.replace(/^#/, "");
+  if (!/^[0-9A-Fa-f]{6}$/.test(cleaned)) return null;
+  let r = parseInt(cleaned.slice(0, 2), 16) / 255;
+  let g = parseInt(cleaned.slice(2, 4), 16) / 255;
+  let b = parseInt(cleaned.slice(4, 6), 16) / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0;
+  let s = 0;
+  const l = (max + min) / 2;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r:
+        h = (g - b) / d + (g < b ? 6 : 0);
+        break;
+      case g:
+        h = (b - r) / d + 2;
+        break;
+      case b:
+        h = (r - g) / d + 4;
+        break;
+    }
+    h /= 6;
+  }
+  return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
+}
+
 function ensureAbsoluteUrl(url: string, base: string): string {
   if (!url) return "";
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
@@ -30,6 +61,21 @@ export function SiteMeta() {
     const ogImageRaw = data?.og_image_url ?? DEFAULTS.ogImage;
     const base = typeof window !== "undefined" ? window.location.origin : "";
     const ogImage = ogImageRaw ? ensureAbsoluteUrl(ogImageRaw, base) : "";
+
+    const root = document.documentElement;
+    const hex = data?.brand_color?.trim();
+    if (hex) {
+      const hsl = hexToHsl(hex);
+      if (hsl) {
+        root.style.setProperty("--primary", hsl);
+        root.style.setProperty("--ring", hsl);
+        root.style.setProperty("--sidebar-primary", hsl);
+      }
+    } else {
+      root.style.removeProperty("--primary");
+      root.style.removeProperty("--ring");
+      root.style.removeProperty("--sidebar-primary");
+    }
 
     document.title = title;
 

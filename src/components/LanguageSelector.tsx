@@ -16,8 +16,8 @@ import { useTranslation } from "@/i18n";
 const LOCALES: Locale[] = ["pt", "en", "es"];
 
 type LanguageSelectorProps = {
-  /** "icon" = globe icon (navbar); "code" = PT/EN/ES text (header) */
-  variant?: "icon" | "code";
+  /** "icon" = globe icon (navbar); "code" = PT/EN/ES text; "iconAndCode" = globe + code (hero) */
+  variant?: "icon" | "code" | "iconAndCode";
   className?: string;
   triggerClassName?: string;
 };
@@ -50,6 +50,20 @@ export function LanguageSelector({
       >
         <Globe className="h-4 w-4" aria-hidden="true" />
       </button>
+    ) : variant === "iconAndCode" ? (
+      <button
+        type="button"
+        className={
+          triggerClassName ??
+          "inline-flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-full px-1 py-0.5 min-w-0"
+        }
+        aria-label={t("languageChoose")}
+        aria-expanded={open}
+        aria-haspopup="listbox"
+      >
+        <Globe className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+        <span>{LOCALE_CODES[locale]}</span>
+      </button>
     ) : (
       <button
         type="button"
@@ -70,7 +84,7 @@ export function LanguageSelector({
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
       <PopoverContent
         align={variant === "icon" ? "end" : "center"}
-        side={variant === "icon" ? "top" : "bottom"}
+        side={variant === "icon" || variant === "iconAndCode" ? "top" : "bottom"}
         sideOffset={8}
         className={className ?? "w-40 p-2"}
       >

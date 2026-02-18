@@ -6,6 +6,7 @@ export type SiteMeta = {
   site_description: string | null;
   favicon_url: string | null;
   og_image_url: string | null;
+  brand_color: string | null;
 };
 
 export async function getSiteMeta(): Promise<SiteMeta> {
@@ -13,7 +14,7 @@ export async function getSiteMeta(): Promise<SiteMeta> {
 
   const { data, error } = await supabase
     .from("companies")
-    .select("site_name,site_description,favicon_url,og_image_url")
+    .select("site_name,site_description,favicon_url,og_image_url,brand_color")
     .eq("id", company.id)
     .single();
 
@@ -24,5 +25,6 @@ export async function getSiteMeta(): Promise<SiteMeta> {
     site_description: data?.site_description ?? null,
     favicon_url: data?.favicon_url ?? null,
     og_image_url: data?.og_image_url ?? null,
+    brand_color: data?.brand_color ?? null,
   };
 }

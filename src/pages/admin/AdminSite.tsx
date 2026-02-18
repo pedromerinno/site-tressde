@@ -47,7 +47,7 @@ async function getSiteMetaSettings(): Promise<SiteMeta | null> {
   const company = await getPrimaryCompany();
   const { data, error } = await supabase
     .from("companies")
-    .select("site_name,site_description,favicon_url,og_image_url")
+    .select("site_name,site_description,favicon_url,og_image_url,brand_color")
     .eq("id", company.id)
     .single();
   if (error) {
@@ -133,6 +133,7 @@ export default function AdminSite() {
   const [siteDescription, setSiteDescription] = React.useState("");
   const [faviconUrl, setFaviconUrl] = React.useState("");
   const [ogImageUrl, setOgImageUrl] = React.useState("");
+  const [brandColor, setBrandColor] = React.useState("");
   const [faviconUploading, setFaviconUploading] = React.useState(false);
   const [ogImageUploading, setOgImageUploading] = React.useState(false);
 
@@ -148,6 +149,7 @@ export default function AdminSite() {
     setSiteDescription(s.site_description ?? "");
     setFaviconUrl(s.favicon_url ?? "");
     setOgImageUrl(s.og_image_url ?? "");
+    setBrandColor(s.brand_color ?? "");
   }, [siteMetaQuery.data]);
 
   React.useEffect(() => {
@@ -172,6 +174,7 @@ export default function AdminSite() {
         site_description: siteDescription.trim() || null,
         favicon_url: faviconUrl.trim() || null,
         og_image_url: ogImageUrl.trim() || null,
+        brand_color: brandColor.trim() || null,
       };
       const { error } = await supabase.from("companies").update(payload).eq("id", company.id);
       if (error) {
@@ -439,6 +442,27 @@ export default function AdminSite() {
                     <img src={ogImageUrl} alt="" className="max-h-20 w-auto object-contain border rounded" />
                   </div>
                 ) : null}
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Cor da empresa</label>
+                <p className="text-xs text-muted-foreground">
+                  Cor principal do site (botões, footer, destaques). Deixe em branco para usar o azul padrão.
+                </p>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    value={brandColor && /^#[0-9A-Fa-f]{6}$/.test(brandColor) ? brandColor : "#0028F0"}
+                    onChange={(e) => setBrandColor(e.target.value)}
+                    className="h-10 w-14 cursor-pointer rounded border border-input bg-background p-1"
+                    aria-label="Selecionar cor"
+                  />
+                  <Input
+                    value={brandColor}
+                    onChange={(e) => setBrandColor(e.target.value)}
+                    placeholder="#0028F0"
+                    className="font-mono w-28"
+                  />
+                </div>
               </div>
             </div>
             <div className="flex justify-end">
