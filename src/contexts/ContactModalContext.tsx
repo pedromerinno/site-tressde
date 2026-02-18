@@ -214,13 +214,13 @@ export function ContactPopover({ children }: ContactPopoverProps) {
   const { t } = useTranslation();
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={setOpen} modal={false}>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverContent
         side="top"
         sideOffset={12}
         align="center"
-        className="w-[min(calc(100vw-2rem),30rem)] max-w-md rounded-2xl border-border/80 p-8 sm:p-10 shadow-xl data-[state=open]:animate-none data-[state=closed]:animate-none"
+        className="z-[100] w-[min(calc(100vw-2rem),30rem)] max-w-md rounded-2xl border-border/80 p-8 sm:p-10 shadow-xl data-[state=open]:animate-none data-[state=closed]:animate-none"
       >
         <motion.div
           initial={{ opacity: 0, y: 16 }}

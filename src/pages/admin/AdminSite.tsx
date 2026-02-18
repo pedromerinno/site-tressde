@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { UploadCloud, Globe } from "lucide-react";
+import { UploadCloud, Globe, Users } from "lucide-react";
 
 import { supabase } from "@/lib/supabase/client";
 import { getPrimaryCompany } from "@/lib/onmx/company";
@@ -55,6 +55,27 @@ async function getSiteMetaSettings(): Promise<SiteMeta | null> {
     throw error;
   }
   return (data as SiteMeta) ?? null;
+}
+
+type ClientOption = { id: string; name: string };
+
+async function getAllClientsOptions(): Promise<ClientOption[]> {
+  const { data, error } = await supabase
+    .from("clients")
+    .select("id,name")
+    .order("name", { ascending: true });
+  if (error) throw error;
+  return (data as ClientOption[]) ?? [];
+}
+
+async function getCompanyClientIds(companyId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("company_clients")
+    .select("client_id")
+    .eq("company_id", companyId)
+    .order("sort_order", { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map((r) => r.client_id);
 }
 
 async function getPositioningSettings(): Promise<PositioningSettingsRow | null> {
@@ -123,6 +144,24 @@ export default function AdminSite() {
     staleTime: 60 * 1000,
   });
 
+  const { data: allClients = [] } = useQuery({
+    queryKey: ["admin", "clients", "options"],
+    queryFn: getAllClientsOptions,
+    staleTime: 60 * 1000,
+  });
+
+  const { data: companyClientIds = [] } = useQuery({
+    queryKey: ["admin", "site", "company-clients", company?.id],
+    queryFn: () => getCompanyClientIds(company!.id),
+    enabled: !!company?.id,
+    staleTime: 30 * 1000,
+  });
+
+  const [selectedClientIds, setSelectedClientIds] = React.useState<string[]>([]);
+  React.useEffect(() => {
+    setSelectedClientIds(companyClientIds);
+  }, [companyClientIds]);
+
   const [type, setType] = React.useState<PositioningMediaType>("image");
   const [url, setUrl] = React.useState("");
   const [posterUrl, setPosterUrl] = React.useState("");
@@ -188,6 +227,36 @@ export default function AdminSite() {
       await qc.invalidateQueries({ queryKey: ["admin", "site", "site-meta"] });
       await qc.invalidateQueries({ queryKey: ["site-meta"] });
       toast({ title: "Atualizado", description: "Metadados do site salvos." });
+    },
+    onError: (err: any) => {
+      toast({ title: "Erro", description: err?.message ?? "Não foi possível salvar.", variant: "destructive" });
+    },
+  });
+
+  const saveCompanyClients = useMutation({
+    mutationFn: async () => {
+      if (!company?.id) throw new Error("Empresa não encontrada.");
+      const { error: delErr } = await supabase
+        .from("company_clients")
+        .delete()
+        .eq("company_id", company.id);
+      if (delErr) throw delErr;
+      if (selectedClientIds.length > 0) {
+        // Ordem de exibição = ordem na lista (allClients é por nome)
+        const orderedIds = allClients.map((c) => c.id).filter((id) => selectedClientIds.includes(id));
+        const rows = orderedIds.map((client_id, i) => ({
+          company_id: company.id,
+          client_id,
+          sort_order: i,
+        }));
+        const { error: insErr } = await supabase.from("company_clients").insert(rows);
+        if (insErr) throw insErr;
+      }
+    },
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["admin", "site", "company-clients"] });
+      await qc.invalidateQueries({ queryKey: ["clients", "marquee"] });
+      toast({ title: "Atualizado", description: "Clientes exibidos no site salvos." });
     },
     onError: (err: any) => {
       toast({ title: "Erro", description: err?.message ?? "Não foi possível salvar.", variant: "destructive" });
@@ -472,6 +541,53 @@ export default function AdminSite() {
             </div>
           </div>
         )}
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card p-6 md:p-7">
+        <div className="flex items-center gap-2 mb-6">
+          <Users className="h-5 w-5 text-muted-foreground" />
+          <div>
+            <div className="font-medium">Clientes no site</div>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              Escolha quais clientes aparecem na faixa de logos do site (marquee). A ordem abaixo define a exibição.
+            </p>
+          </div>
+        </div>
+        <div className="space-y-3 max-h-[320px] overflow-y-auto pr-2">
+          {allClients.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhum cliente cadastrado. Cadastre em Clientes primeiro.</p>
+          ) : (
+            allClients.map((client) => (
+              <label
+                key={client.id}
+                className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-muted/60 cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedClientIds.includes(client.id)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedClientIds((prev) => [...prev, client.id]);
+                    } else {
+                      setSelectedClientIds((prev) => prev.filter((id) => id !== client.id));
+                    }
+                  }}
+                  className="h-4 w-4 rounded border-input"
+                  aria-label={`Exibir ${client.name} no site`}
+                />
+                <span className="text-sm font-medium truncate">{client.name}</span>
+              </label>
+            ))
+          )}
+        </div>
+        <div className="flex justify-end mt-4">
+          <Button
+            onClick={() => saveCompanyClients.mutate()}
+            disabled={saveCompanyClients.isPending || allClients.length === 0}
+          >
+            {saveCompanyClients.isPending ? "Salvando…" : "Salvar clientes no site"}
+          </Button>
+        </div>
       </div>
 
       <div className="rounded-2xl border border-border bg-card p-6 md:p-7">

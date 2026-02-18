@@ -7,10 +7,10 @@ type ClientLogo = {
 import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client";
+import { getPrimaryCompany } from "@/lib/onmx/company";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 
 const fallbackClients: ClientLogo[] = [
-  // Troque pelos seus clientes reais (ideal: SVG/PNG monocromático).
   { name: "Cliente One" },
   { name: "Cliente Two" },
   { name: "Cliente Three" },
@@ -22,20 +22,35 @@ const fallbackClients: ClientLogo[] = [
 ];
 
 async function getClientsForMarquee(): Promise<ClientLogo[]> {
-  const { data, error } = await supabase
+  const company = await getPrimaryCompany();
+
+  const { data: cc, error: ccError } = await supabase
+    .from("company_clients")
+    .select("client_id, sort_order")
+    .eq("company_id", company.id)
+    .order("sort_order", { ascending: true });
+
+  if (ccError) throw ccError;
+
+  const clientIds = cc?.map((c) => c.client_id) ?? [];
+  if (clientIds.length === 0) return [];
+
+  const { data: clients, error } = await supabase
     .from("clients")
-    .select("id,name,logo_url,logo_svg,created_at")
-    .order("created_at", { ascending: true });
+    .select("id,name,logo_url,logo_svg")
+    .in("id", clientIds);
 
   if (error) throw error;
 
-  return (
-    data?.map((c) => ({
-      name: c.name,
-      src: c.logo_url ?? undefined,
-      svg: c.logo_svg ?? undefined,
-    })) ?? []
-  );
+  const byId = new Map((clients ?? []).map((c) => [c.id, c]));
+  return clientIds
+    .map((id) => byId.get(id))
+    .filter(Boolean)
+    .map((c) => ({
+      name: c!.name,
+      src: c!.logo_url ?? undefined,
+      svg: c!.logo_svg ?? undefined,
+    }));
 }
 
 const LOGO_COLOR = "hsl(40,5%,60%)";
@@ -84,7 +99,9 @@ export default function ClientLogosMarquee() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const clients = (data && data.length > 0 ? data : fallbackClients).slice(0, 14);
+  const clients = (
+    data && data.length > 0 ? data : Array.isArray(data) ? [] : fallbackClients
+  ).slice(0, 14);
   const trackClients = React.useMemo(() => {
     if (clients.length === 0) return [];
 
@@ -93,6 +110,8 @@ export default function ClientLogosMarquee() {
     const repeats = Math.max(4, Math.ceil(minItems / clients.length));
     return Array.from({ length: repeats }, () => clients).flat();
   }, [clients]);
+
+  if (!isLoading && clients.length === 0) return null;
 
   return (
     <section aria-label="Clientes" className="bg-background overflow-x-hidden">
