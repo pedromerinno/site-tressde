@@ -159,10 +159,56 @@ export default function PublicVideoBlock({ content, noSpacing }: Props) {
   const autoPlay = content.autoplay ?? false;
   const loop = content.loop ?? false;
 
-  // Fallback: show placeholder when empty or processing.
   const hasMux = content.provider === "mux";
   const hasPlayableMux = hasMux && Boolean(content.muxPlaybackId);
   const hasUrl = Boolean(content.url?.trim?.());
+  const isMuxRender = content.provider === "mux" && !!content.muxPlaybackId;
+  const isFileRender = content.provider === "file";
+
+  // ── All hooks MUST be called unconditionally ──────────────────────
+  const muxRef = React.useRef<any>(null);
+  const fileRef = React.useRef<HTMLVideoElement | null>(null);
+  const [blurVisible, setBlurVisible] = React.useState(true);
+
+  // Reset blur when playback ID changes
+  React.useEffect(() => {
+    if (isMuxRender) setBlurVisible(true);
+  }, [content.muxPlaybackId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Mux: autoplay kick
+  React.useEffect(() => {
+    if (!isMuxRender || !autoPlay) return;
+    const el = muxRef.current;
+    if (!el?.play) return;
+    Promise.resolve()
+      .then(() => el.play())
+      .catch(() => {});
+  }, [isMuxRender, autoPlay, content.muxPlaybackId]);
+
+  // Mux: hide blur once video is ready
+  React.useEffect(() => {
+    if (!isMuxRender) return;
+    const el = muxRef.current;
+    if (!el) return;
+    const onReady = () => setBlurVisible(false);
+    el.addEventListener("loadeddata", onReady);
+    el.addEventListener("playing", onReady);
+    return () => {
+      el.removeEventListener("loadeddata", onReady);
+      el.removeEventListener("playing", onReady);
+    };
+  }, [isMuxRender, content.muxPlaybackId]);
+
+  // File: autoplay kick
+  React.useEffect(() => {
+    if (!isFileRender || !autoPlay) return;
+    const el = fileRef.current;
+    if (!el) return;
+    el.muted = true;
+    el.play().catch(() => {});
+  }, [isFileRender, autoPlay, content.url]);
+
+  // ── Render ────────────────────────────────────────────────────────
 
   if (!hasUrl && !hasPlayableMux) {
     return (
@@ -175,31 +221,8 @@ export default function PublicVideoBlock({ content, noSpacing }: Props) {
     );
   }
 
-  if (content.provider === "mux" && content.muxPlaybackId) {
-    const ref = React.useRef<any>(null);
-    const [blurVisible, setBlurVisible] = React.useState(true);
-    const blurThumbnail = getMuxBlurThumbnail(content.muxPlaybackId);
-
-    React.useEffect(() => {
-      if (!autoPlay) return;
-      const el = ref.current;
-      if (!el?.play) return;
-      Promise.resolve()
-        .then(() => el.play())
-        .catch(() => {});
-    }, [autoPlay, content.muxPlaybackId]);
-
-    React.useEffect(() => {
-      const el = ref.current;
-      if (!el) return;
-      const onReady = () => setBlurVisible(false);
-      el.addEventListener("loadeddata", onReady);
-      el.addEventListener("playing", onReady);
-      return () => {
-        el.removeEventListener("loadeddata", onReady);
-        el.removeEventListener("playing", onReady);
-      };
-    }, [content.muxPlaybackId]);
+  if (isMuxRender) {
+    const blurThumbnail = getMuxBlurThumbnail(content.muxPlaybackId!);
 
     const muxStyle = controls
       ? undefined
@@ -213,7 +236,6 @@ export default function PublicVideoBlock({ content, noSpacing }: Props) {
     return (
       <VideoFrame content={content} noSpacing={noSpacing}>
         <div className={cn("relative w-full", aspect)}>
-          {/* Blur preview enquanto o vídeo carrega (Mux thumbnail LQIP) */}
           <div
             aria-hidden
             className={cn(
@@ -227,16 +249,15 @@ export default function PublicVideoBlock({ content, noSpacing }: Props) {
               className="absolute inset-0 w-full h-full object-cover scale-150 blur-2xl"
             />
           </div>
-          <div className={cn("relative", controls ? "w-full" : "w-full mux-no-controls")}>
+          <div className={cn("absolute inset-0", controls ? "" : "mux-no-controls")}>
             <MuxPlayer
-              ref={ref}
-              playbackId={content.muxPlaybackId}
+              ref={muxRef}
+              playbackId={content.muxPlaybackId!}
               streamType="on-demand"
-              preload="none"
-              className={`w-full ${aspect}`}
+              preload="metadata"
+              className="absolute inset-0 w-full h-full"
               style={muxStyle}
               controls={controls}
-              hideControls={!controls}
               autoPlay={autoPlay ? "muted" : undefined}
               muted={autoPlay || !controls}
               playsInline
@@ -248,34 +269,25 @@ export default function PublicVideoBlock({ content, noSpacing }: Props) {
     );
   }
 
-  if (content.provider === "file") {
-    const videoRef = React.useRef<HTMLVideoElement | null>(null);
-
-    React.useEffect(() => {
-      if (!autoPlay) return;
-      const el = videoRef.current;
-      if (!el) return;
-      el.muted = true;
-      el.play().catch(() => {});
-    }, [autoPlay, content.url]);
-
+  if (isFileRender) {
     return (
       <VideoFrame content={content} noSpacing={noSpacing}>
         <video
-          ref={videoRef}
+          ref={fileRef}
           src={content.url}
           controls={controls}
           autoPlay={autoPlay}
           muted={autoPlay || !controls}
           playsInline
           loop={loop}
-          preload="none"
+          preload="metadata"
           className={`w-full ${aspect}`}
         />
       </VideoFrame>
     );
   }
 
+  // YouTube / Vimeo embed
   const embedUrlBase = getEmbedUrl(content.url, content.provider);
   const embedUrl = (() => {
     if (!embedUrlBase) return null;
@@ -283,7 +295,6 @@ export default function PublicVideoBlock({ content, noSpacing }: Props) {
     const params = new URLSearchParams();
     if (autoPlay) {
       params.set("autoplay", "1");
-      // browsers typically require muted autoplay
       params.set("mute", "1");
       params.set("muted", "1");
     }
@@ -294,7 +305,6 @@ export default function PublicVideoBlock({ content, noSpacing }: Props) {
       params.set("loop", "1");
     }
 
-    // YouTube requires playlist=<id> for looping a single video
     if (content.provider === "youtube" && loop) {
       const idMatch = embedUrlBase.match(/\/embed\/([^?]+)/);
       const vid = idMatch?.[1];
