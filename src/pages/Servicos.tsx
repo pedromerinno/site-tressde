@@ -9,7 +9,7 @@ import { ContactModalProvider, useContactModal, ContactPopover } from "@/context
 import { CasesSectionProvider } from "@/contexts/CasesSectionContext";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 import MuxPlayer from "@mux/mux-player-react";
-import { Sparkles, Film } from "lucide-react";
+import { Sparkles, Film, Play } from "lucide-react";
 import {
   getStudioRevealDisplayItems,
   getPublicCases,
@@ -43,18 +43,20 @@ function ServicosHero() {
   const taglineRef = React.useRef<HTMLParagraphElement>(null);
   const { t } = useTranslation();
 
-  const { data: revealItems } = useQuery({
+  const { data: revealItems, isLoading: revealLoading } = useQuery({
     queryKey: ["studio-reveal-display"],
     queryFn: getStudioRevealDisplayItems,
     staleTime: 2 * 60 * 1000,
   });
 
-  const { data: publicCases } = useQuery({
+  const { data: publicCases, isLoading: casesLoading } = useQuery({
     queryKey: ["cases", "public"],
     queryFn: getPublicCases,
     staleTime: 5 * 60 * 1000,
     enabled: revealItems == null,
   });
+
+  const queriesSettled = !revealLoading && (revealItems != null || !casesLoading);
 
   const heroItems: StudioRevealDisplayItem[] = React.useMemo(() => {
     if (revealItems && revealItems.length === 3) return revealItems;
@@ -76,6 +78,43 @@ function ServicosHero() {
     }
     return [];
   }, [revealItems, publicCases]);
+
+  // Preload hero images: only reveal once all are loaded (or failed)
+  const [imagesReady, setImagesReady] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!queriesSettled) return;
+    if (heroItems.length === 0) {
+      setImagesReady(true);
+      return;
+    }
+
+    const urls = heroItems
+      .map((item) => getCaseCoverPosterUrl(item))
+      .filter(Boolean) as string[];
+
+    if (urls.length === 0) {
+      setImagesReady(true);
+      return;
+    }
+
+    let cancelled = false;
+    Promise.all(
+      urls.map(
+        (src) =>
+          new Promise<void>((resolve) => {
+            const img = new Image();
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
+            img.src = src;
+          }),
+      ),
+    ).then(() => {
+      if (!cancelled) setImagesReady(true);
+    });
+
+    return () => { cancelled = true; };
+  }, [queriesSettled, heroItems]);
 
   React.useLayoutEffect(() => {
     const section = sectionRef.current;
@@ -122,8 +161,8 @@ function ServicosHero() {
   const showCaseCovers = heroItems.length > 0;
 
   return (
-    <section ref={sectionRef} className="relative min-h-[85vh] flex flex-col justify-end overflow-hidden">
-      <div ref={bgRef} className="absolute inset-0 will-change-transform">
+    <section ref={sectionRef} className="relative min-h-[85vh] flex flex-col justify-end overflow-hidden bg-black">
+      <div ref={bgRef} className={`absolute inset-0 will-change-transform transition-opacity duration-700 ease-out ${imagesReady ? "opacity-100" : "opacity-0"}`}>
         {showCaseCovers ? (
           <div className="grid grid-cols-3 w-full h-full">
             {heroItems.map((item) => {
@@ -147,7 +186,7 @@ function ServicosHero() {
               );
             })}
           </div>
-        ) : (
+        ) : queriesSettled ? (
           <OptimizedImage
             src="/BG_onmx_02.jpg"
             alt=""
@@ -157,7 +196,7 @@ function ServicosHero() {
             sizes="100vw"
             className="w-full h-full object-cover"
           />
-        )}
+        ) : null}
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/35 to-black/70" />
       </div>
 
@@ -236,6 +275,7 @@ function CaseMedia({
   muted = true,
   loop = true,
   autoPlay = true,
+  onEnded,
 }: {
   item: CaseForService;
   className?: string;
@@ -243,6 +283,7 @@ function CaseMedia({
   muted?: boolean;
   loop?: boolean;
   autoPlay?: boolean;
+  onEnded?: () => void;
 }) {
   const posterUrl = getCasePosterUrl(item);
 
@@ -256,6 +297,7 @@ function CaseMedia({
           loop={loop}
           playsInline
           autoPlay={autoPlay}
+          onEnded={onEnded}
           className="absolute inset-0 h-full w-full"
         />
       </div>
@@ -272,6 +314,7 @@ function CaseMedia({
           loop={loop}
           playsInline
           autoPlay={autoPlay}
+          onEnded={onEnded}
           className="absolute inset-0 w-full h-full object-cover object-center"
           style={{ objectFit: "cover", objectPosition: "center" }}
         />
@@ -511,35 +554,56 @@ function ServiceBlock({
   );
 }
 
-// ─── Full-bleed showcase (seção de vídeo com padding e borda) ───────────────
+// ─── Full-bleed showcase (sequência de todos os vídeos do site) ───────────────
 
-function FullBleedShowcase({ caseItem }: { caseItem: CaseForService | undefined }) {
+function FullBleedShowcase({ caseItems }: { caseItems: CaseForService[] }) {
+  const videoCases = React.useMemo(
+    () => caseItems.filter((c) => hasVideo(c)),
+    [caseItems],
+  );
+  const [currentIndex, setCurrentIndex] = React.useState(0);
+  const current = videoCases.length > 0 ? videoCases[currentIndex % videoCases.length] : null;
+
+  const goNext = React.useCallback(() => {
+    setCurrentIndex((i) => (i + 1) % videoCases.length);
+  }, [videoCases.length]);
+
+  const fallbackCase = caseItems[0];
+
   return (
     <section className="relative w-full px-4 sm:px-6 md:px-8 py-6 md:py-8">
       <div className="relative h-[50vh] min-h-[280px] max-h-[560px] w-full overflow-hidden rounded-2xl md:rounded-3xl border border-border/50 bg-muted/30">
-        {caseItem ? (
-          hasVideo(caseItem) ? (
-            <CaseMedia
-              item={caseItem}
-              className="absolute inset-0 h-full w-full object-cover"
-              sizes="100vw"
-              autoPlay
-            />
-          ) : getCasePosterUrl(caseItem) ? (
-            <OptimizedImage
-              src={getCasePosterUrl(caseItem)!}
-              alt=""
-              preset="hero"
-              widths={[1280, 1920]}
-              sizes="100vw"
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-          ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/10" />
-          )
+        {current ? (
+          <CaseMedia
+            key={current.id}
+            item={current}
+            className="absolute inset-0 h-full w-full object-cover"
+            sizes="100vw"
+            autoPlay
+            loop={false}
+            onEnded={videoCases.length > 1 ? goNext : undefined}
+          />
+        ) : fallbackCase && getCasePosterUrl(fallbackCase) ? (
+          <OptimizedImage
+            src={getCasePosterUrl(fallbackCase)!}
+            alt=""
+            preset="hero"
+            widths={[1280, 1920]}
+            sizes="100vw"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/10" />
         )}
+        <Link
+          to="/#work"
+          className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 transition-opacity hover:bg-black/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black/30"
+          aria-label="Ver cases"
+        >
+          <span className="flex h-14 w-14 items-center justify-center rounded-full border border-white/50 bg-white/10 text-white backdrop-blur-sm">
+            <Play className="h-6 w-6 fill-white" strokeWidth={1.5} aria-hidden />
+          </span>
+        </Link>
       </div>
     </section>
   );
@@ -651,7 +715,7 @@ function WhyTressdeSection({ caseItems }: { caseItems: CaseForService[] }) {
       </div>
 
       <div className="relative z-10 w-full h-full flex items-center justify-center px-6 md:px-10 lg:px-16 py-24 md:py-32">
-        <div className="mx-auto max-w-4xl w-full text-center flex flex-col gap-10 md:gap-12">
+        <div className="mx-auto w-full text-center flex flex-col gap-14 md:gap-20">
           <h2
             ref={titleRef}
             className="font-display text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight text-white"
@@ -660,7 +724,7 @@ function WhyTressdeSection({ caseItems }: { caseItems: CaseForService[] }) {
           </h2>
           <p
             ref={subRef}
-            className="text-lg md:text-xl text-white/85 leading-relaxed max-w-2xl mx-auto"
+            className="text-lg md:text-xl text-white/85 leading-relaxed max-w-4xl mx-auto"
           >
             {t("servicosWhySub")}
           </p>
@@ -669,16 +733,16 @@ function WhyTressdeSection({ caseItems }: { caseItems: CaseForService[] }) {
             className="relative flex items-center justify-center overflow-hidden"
           >
             {/* Placeholder invisível para dar altura natural ao slot */}
-            <div className="invisible rounded-full border border-white/30 py-4 px-6 md:py-5 md:px-8">
-              <span className="text-xl md:text-2xl font-medium">{pillars[0]}</span>
+            <div className="invisible rounded-full border border-white/30 py-6 px-10 md:py-7 md:px-12">
+              <span className="text-3xl md:text-4xl font-medium">{pillars[0]}</span>
             </div>
             {pillars.map((label, i) => (
               <div
                 key={label}
                 ref={(el) => { pillRefs.current[i] = el; }}
-                className="absolute left-1/2 -translate-x-1/2 w-fit rounded-full border border-white/30 py-4 px-6 md:py-5 md:px-8 text-center"
+                className="absolute left-1/2 -translate-x-1/2 w-fit rounded-full border border-white/30 py-6 px-10 md:py-7 md:px-12 text-center"
               >
-                <span className="text-xl md:text-2xl font-medium text-white/95 tracking-tight">
+                <span className="text-3xl md:text-4xl font-medium text-white/95 tracking-tight">
                   {label}
                 </span>
               </div>
@@ -753,7 +817,7 @@ function ProcessSection() {
         {/* 5 círculos — full width */}
         <div
           ref={diagramRef}
-          className="mt-16 w-full flex flex-nowrap justify-center items-center overflow-x-auto overflow-y-visible py-8 scrollbar-hide min-h-[200px] sm:min-h-[230px] md:min-h-[260px] lg:min-h-[290px]"
+          className="mt-16 w-full flex flex-nowrap justify-center items-center overflow-x-auto overflow-y-visible py-8 scrollbar-hide min-h-[220px] sm:min-h-[260px] md:min-h-[300px] lg:min-h-[340px]"
           role="img"
           aria-label={processSteps.join(", ")}
         >
@@ -762,13 +826,13 @@ function ProcessSection() {
               key={step}
               data-process-circle
               className={[
-"flex flex-shrink-0 items-center justify-center rounded-full border-2 border-primary bg-muted/30 px-4 py-5 text-center",
-                  "w-[170px] h-[170px] sm:w-[200px] sm:h-[200px] md:w-[230px] md:h-[230px] lg:w-[260px] lg:h-[260px]",
-                  "text-sm sm:text-base md:text-lg font-semibold text-primary leading-tight",
-                  i > 0 && "-ml-6 sm:-ml-8 md:-ml-10 lg:-ml-12",
+                "flex flex-shrink-0 items-center justify-center rounded-full border-2 border-primary bg-muted/30 px-3 py-4 text-center",
+                "w-[200px] h-[200px] sm:w-[240px] sm:h-[240px] md:w-[280px] md:h-[280px] lg:w-[320px] lg:h-[320px]",
+                "text-xs sm:text-sm md:text-base font-semibold text-primary leading-tight",
+                i > 0 && "-ml-6 sm:-ml-8 md:-ml-10 lg:-ml-12",
               ].join(" ")}
             >
-              <span className="max-w-[88%] break-words [word-break:break-word]">
+              <span className="block max-w-[80%] text-center break-words [word-break:break-word] line-clamp-2 leading-tight">
                 {step}
               </span>
             </div>
@@ -788,81 +852,70 @@ function ProcessSection() {
 // ─── 3D, VFX, IA — 3 cards lado a lado; hover expande, outros contraem; imagem no fundo ─
 
 const SERVICOS_LEAD_CARD_BASE =
-  "h-[380px] md:h-[440px] min-w-0 rounded-3xl overflow-hidden relative flex flex-col transition-[flex] duration-300 ease-out flex-[1_1_0%] hover:flex-[2_1_0%]";
-
-// Imagens de fundo: coloque em public/ ou use URLs. Fallback = gradiente.
-const SERVICOS_LEAD_BG = {
-  "3d": "/images/servicos-lead-3d.jpg",
-  vfx: "/images/servicos-lead-vfx.jpg",
-  ai: "/images/servicos-lead-ai.jpg",
-} as const;
+  "h-[420px] md:h-[500px] lg:h-[540px] min-w-0 rounded-3xl overflow-hidden relative flex flex-col flex-[1_1_0%] hover:flex-[2_1_0%] transition-[flex] duration-700 [transition-timing-function:cubic-bezier(0.22,1.15,0.5,1)]";
 
 function ServicosLeadCard({
   title,
   description,
-  ctaLabel,
   ariaLabelId,
-  bgKey,
+  backgroundImageUrl,
   fallbackGradient,
   overlayGradient,
-  ctaClassName,
 }: {
   title: string;
   description: string;
-  ctaLabel: string;
   ariaLabelId?: string;
-  bgKey: keyof typeof SERVICOS_LEAD_BG;
+  /** URL da capa de um case (por categoria). Se null, só o gradiente é exibido. */
+  backgroundImageUrl: string | null;
   fallbackGradient: string;
   overlayGradient: string;
-  ctaClassName: string;
 }) {
-  const bgUrl = SERVICOS_LEAD_BG[bgKey];
-  const arrowSvg = (
-    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-    </svg>
-  );
-
   return (
     <div
       id={ariaLabelId}
       className={`${SERVICOS_LEAD_CARD_BASE} p-8 md:p-10`}
     >
-      {/* Camada 1: gradiente de fallback (visível quando a imagem não carrega) */}
+      {/* Camada 1: gradiente (sempre visível; cobre quando não há imagem) */}
       <div className={`absolute inset-0 ${fallbackGradient}`} aria-hidden />
-      {/* Camada 2: imagem de fundo */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${bgUrl})` }}
-      />
+      {/* Camada 2: imagem do case (quando disponível) */}
+      {backgroundImageUrl ? (
+        <img
+          src={backgroundImageUrl}
+          alt=""
+          aria-hidden
+          className="absolute inset-0 h-full w-full object-cover object-center"
+        />
+      ) : null}
       {/* Camada 3: overlay para legibilidade do texto */}
       <div className={`absolute inset-0 ${overlayGradient}`} aria-hidden />
       {/* Conteúdo */}
       <div className="relative z-10 flex flex-col h-full">
-        <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight text-white">
+        <h2 className="font-display text-2xl md:text-3xl lg:text-4xl font-semibold tracking-tight text-white">
           {title}
         </h2>
-        <p className="mt-4 text-base text-white/90 leading-relaxed max-w-xl line-clamp-3">
+        <p className="mt-auto pt-6 text-base text-white/90 leading-relaxed max-w-xl line-clamp-3">
           {description}
         </p>
-        <div className="mt-auto pt-8 flex items-end justify-end">
-          <Link
-            to="/#work"
-            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black/20 ${ctaClassName}`}
-            aria-label={ctaLabel}
-          >
-            <span className="sr-only">{ctaLabel}</span>
-            {arrowSvg}
-          </Link>
-        </div>
       </div>
     </div>
   );
 }
 
-function VfxLeadSection() {
+function VfxLeadSection({
+  lead3d,
+  leadVfx,
+  leadAi,
+}: {
+  lead3d?: CaseForService;
+  leadVfx?: CaseForService;
+  leadAi?: CaseForService;
+}) {
   const { t } = useTranslation();
   const sectionRef = React.useRef<HTMLElement>(null);
+
+  const bg3d = lead3d ? getCasePosterUrl(lead3d) : null;
+  const bgVfx = leadVfx ? getCasePosterUrl(leadVfx) : null;
+  const bgAi = leadAi ? getCasePosterUrl(leadAi) : null;
 
   return (
     <section
@@ -870,35 +923,29 @@ function VfxLeadSection() {
       className="px-6 md:px-10 lg:px-16 py-16 md:py-24"
       aria-labelledby="servicos-lead-3d"
     >
-      <div className="mx-auto max-w-7xl">
+      <div className="mx-auto">
         <div className="flex flex-col lg:flex-row gap-4 md:gap-5">
           <ServicosLeadCard
             ariaLabelId="servicos-lead-3d"
             title={t("servicos3dTitle")}
             description={t("servicos3dBody1")}
-            ctaLabel={t("servicos3dCta")}
-            bgKey="3d"
+            backgroundImageUrl={bg3d}
             fallbackGradient="bg-gradient-to-br from-primary via-primary to-primary/90"
             overlayGradient="bg-gradient-to-t from-black/75 via-black/35 to-black/20"
-            ctaClassName="bg-white text-primary"
           />
           <ServicosLeadCard
             title={t("servicosVfxTitle")}
             description={t("servicosVfxLeadDesc")}
-            ctaLabel={t("servicosVfxCta")}
-            bgKey="vfx"
+            backgroundImageUrl={bgVfx}
             fallbackGradient="bg-gradient-to-br from-primary via-primary to-primary/90"
             overlayGradient="bg-gradient-to-t from-black/75 via-black/35 to-black/20"
-            ctaClassName="bg-white text-primary"
           />
           <ServicosLeadCard
             title={t("servicosAiTitle")}
             description={t("servicosAiBody1")}
-            ctaLabel={t("servicosAiCta")}
-            bgKey="ai"
+            backgroundImageUrl={bgAi}
             fallbackGradient="bg-gradient-to-br from-primary via-primary to-primary/90"
             overlayGradient="bg-gradient-to-t from-black/75 via-black/35 to-black/20"
-            ctaClassName="bg-white text-primary"
           />
         </div>
       </div>
@@ -1106,7 +1153,6 @@ function ServicosContent() {
     [publicCases],
   );
 
-  const fullBleedCase = cases3d[0] ?? casesVfx[0];
   const whyTressdeCase = casesAI[0];
 
   const ctaCaseItems = React.useMemo(() => {
@@ -1146,7 +1192,11 @@ function ServicosContent() {
         videoCount={3}
       />
 
-      <VfxLeadSection />
+      <VfxLeadSection
+        lead3d={cases3d[0]}
+        leadVfx={casesVfx[0]}
+        leadAi={casesAI[0]}
+      />
 
       <ServiceBlock
         number="02"
@@ -1171,7 +1221,7 @@ function ServicosContent() {
         videoCount={2}
       />
 
-      <FullBleedShowcase caseItem={fullBleedCase} />
+      <FullBleedShowcase caseItems={ctaCaseItems} />
 
       <ServiceBlock
         number="03"

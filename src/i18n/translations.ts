@@ -132,7 +132,7 @@ const pt = {
   servicosAiCta: "Explorar projetos AI",
 
   // Servicos — Why TRESSDE
-  servicosWhyTitle: "Por que a TRESSDE",
+  servicosWhyTitle: "Por que a TRESSDE®?",
   servicosWhySub:
     "Porque execução não basta. O mundo exige bom gosto, cultura e precisão.",
   servicosWhyPillar1: "Sensibilidade de design",
@@ -286,7 +286,7 @@ const enMap: Record<TranslationKey, string> = {
     "AI-assisted visual development, Hybrid VFX workflows, High-volume content exploration, Creative direction + refinement",
   servicosAiCta: "Explore AI Projects",
 
-  servicosWhyTitle: "Why TRESSDE",
+  servicosWhyTitle: "Why TRESSDE®?",
   servicosWhySub:
     "Because execution is not enough. The world demands taste, culture, and precision.",
   servicosWhyPillar1: "Design sensibility",
@@ -438,7 +438,7 @@ const esMap: Record<TranslationKey, string> = {
     "Desarrollo visual asistido por IA, Flujos VFX híbridos, Exploración de contenido de alto volumen, Dirección creativa y refinamiento",
   servicosAiCta: "Explorar proyectos AI",
 
-  servicosWhyTitle: "Por qué TRESSDE",
+  servicosWhyTitle: "¿Por qué TRESSDE®?",
   servicosWhySub:
     "Porque la ejecución no basta. El mundo exige gusto, cultura y precisión.",
   servicosWhyPillar1: "Sensibilidad de diseño",

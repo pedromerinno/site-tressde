@@ -8,6 +8,7 @@ import { getPrimaryCompany } from "@/lib/onmx/company";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 import { Button } from "@/components/ui/button";
 import Footer from "@/components/Footer";
+import { ContactModalProvider, useContactModal, ContactPopover } from "@/contexts/ContactModalContext";
 import { getPublicCaseBlocks } from "@/lib/case-builder/queries";
 import type { VideoContent } from "@/lib/case-builder/types";
 import { normalizeContainerContent } from "@/lib/case-builder/types";
@@ -147,9 +148,21 @@ async function getCaseMedia(caseId: string): Promise<CaseMediaItem[]> {
 
 const FROM_CASE_PAGE_KEY = "tressde_from_case_page";
 
+const caseCtaClass =
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-12 px-4 rounded-full shadow-lg shadow-black/10 ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50";
+
 export default function CasePage() {
+  return (
+    <ContactModalProvider>
+      <CasePageContent />
+    </ContactModalProvider>
+  );
+}
+
+function CasePageContent() {
   const { slug } = useParams<{ slug: string }>();
   const { t } = useTranslation();
+  const contactModal = useContactModal();
   const [dockMenu, setDockMenu] = React.useState(false);
   const dockSentinelRef = React.useRef<HTMLDivElement | null>(null);
   const [infoOpen, setInfoOpen] = React.useState(false);
@@ -472,33 +485,38 @@ export default function CasePage() {
             ].join(" ")}
           >
             <div className="pointer-events-auto flex items-center justify-center gap-2">
-              <div className="flex-1 rounded-full bg-background/80 backdrop-blur-md ring-1 ring-border/70 shadow-lg shadow-black/10">
-                <div className="h-12 px-2 sm:px-3 flex items-center justify-between gap-3">
-                  <Button
-                    asChild
-                    variant="ghost"
-                    className="h-10 px-3 rounded-full hover:bg-black/[0.04]"
-                  >
-                    <Link to="/#cases" aria-label={t("caseBackAria")}>
-                      <ChevronLeft className="h-4 w-4 mr-1" aria-hidden="true" />
-                      <span className="text-sm font-medium">{t("caseBack")}</span>
-                    </Link>
-                  </Button>
+              <div className="rounded-full bg-background/80 backdrop-blur-md ring-1 ring-border/70 shadow-lg shadow-black/10 shrink-0">
+                <Button
+                  asChild
+                  variant="ghost"
+                  className="h-12 px-4 rounded-full hover:bg-black/[0.04]"
+                >
+                  <Link to="/#cases" aria-label={t("caseBackAria")}>
+                    <ChevronLeft className="h-4 w-4 mr-1" aria-hidden="true" />
+                    <span className="text-sm font-medium">{t("caseBack")}</span>
+                  </Link>
+                </Button>
+              </div>
 
-                  <div className="min-w-0 flex-1 px-1 text-center">
-                    <div className="text-sm font-medium truncate">
-                      {caseQuery.data?.title ?? ""}
-                    </div>
-                  </div>
+              <div className="min-w-0 max-w-[240px] sm:max-w-[280px] rounded-full bg-background/80 backdrop-blur-md ring-1 ring-border/70 shadow-lg shadow-black/10 shrink">
+                <div className="h-12 px-4 flex items-center justify-center">
+                  <span className="text-sm font-medium truncate text-center">
+                    {caseQuery.data?.title ?? ""}
+                  </span>
                 </div>
               </div>
 
-              <Button
-                asChild
-                className="h-12 px-4 rounded-full shadow-lg shadow-black/10"
-              >
-                <Link to="/#contato">{t("caseTalkToUs")}</Link>
-              </Button>
+              {contactModal ? (
+                <ContactPopover>
+                  <button type="button" className={`${caseCtaClass} shrink-0`}>
+                    {t("caseTalkToUs")}
+                  </button>
+                </ContactPopover>
+              ) : (
+                <Button asChild className="h-12 px-4 rounded-full shadow-lg shadow-black/10 shrink-0">
+                  <Link to="/#contato">{t("caseTalkToUs")}</Link>
+                </Button>
+              )}
             </div>
           </div>
         </div>
