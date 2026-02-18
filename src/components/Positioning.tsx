@@ -5,6 +5,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 import { supabase } from "@/lib/supabase/client";
 import { getPrimaryCompany } from "@/lib/onmx/company";
+import { getSequenceFrameUrls } from "@/lib/sequence-frames";
 
 type PositioningMediaType = "image" | "video";
 
@@ -56,18 +57,7 @@ const Positioning = () => {
   const line2Ref = React.useRef<HTMLDivElement | null>(null);
   const line3Ref = React.useRef<HTMLDivElement | null>(null);
 
-  const sequenceFrames = React.useMemo(() => {
-    // Files in /public/sequence are named with 5-digit frame numbers.
-    // Note: frame 00030 is missing in the exported set, so we skip it.
-    const prefix =
-      "freepik_faa-um-zoom-in-entrando-dentro-da-tela-do-computad_kling_1080p_16-9_24fps_34930_";
-    const pad = (n: number) => String(n).padStart(5, "0");
-    const frameNumbers = [
-      ...Array.from({ length: 30 }, (_, i) => i), // 00000..00029
-      ...Array.from({ length: 90 }, (_, i) => i + 31), // 00031..00120
-    ];
-    return frameNumbers.map((n) => `/sequence/${prefix}${pad(n)}.jpg`);
-  }, []);
+  const sequenceFrames = React.useMemo(() => getSequenceFrameUrls(), []);
 
   const drawCoverFrame = React.useCallback((img: HTMLImageElement) => {
     const canvas = canvasRef.current;

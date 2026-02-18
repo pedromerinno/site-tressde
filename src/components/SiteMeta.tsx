@@ -1,11 +1,9 @@
 import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getSiteMeta } from "@/lib/site-meta";
+import { useTranslation } from "@/i18n";
 
 const DEFAULTS = {
-  title: "TRESSDE® Imagine.",
-  description:
-    "Agência full-service para marcas que lideram a evolução do mercado.",
   favicon: "/favicon-tsd.svg",
   ogImage: "",
 };
@@ -18,6 +16,7 @@ function ensureAbsoluteUrl(url: string, base: string): string {
 }
 
 export function SiteMeta() {
+  const { t } = useTranslation();
   const { data } = useQuery({
     queryKey: ["site-meta"],
     queryFn: getSiteMeta,
@@ -25,8 +24,8 @@ export function SiteMeta() {
   });
 
   React.useEffect(() => {
-    const title = data?.site_name ?? DEFAULTS.title;
-    const description = data?.site_description ?? DEFAULTS.description;
+    const title = data?.site_name ?? t("metaTitleDefault");
+    const description = data?.site_description ?? t("metaDescriptionDefault");
     const favicon = data?.favicon_url ?? DEFAULTS.favicon;
     const ogImageRaw = data?.og_image_url ?? DEFAULTS.ogImage;
     const base = typeof window !== "undefined" ? window.location.origin : "";
@@ -63,7 +62,7 @@ export function SiteMeta() {
     setMeta("content", title, 'meta[name="twitter:title"]', "name", "twitter:title");
     setMeta("content", description, 'meta[name="twitter:description"]', "name", "twitter:description");
     if (ogImage) setMeta("content", ogImage, 'meta[name="twitter:image"]', "name", "twitter:image");
-  }, [data]);
+  }, [data, t]);
 
   return null;
 }

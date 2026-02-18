@@ -11,10 +11,24 @@ import {
 } from "@/lib/case-builder/queries";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 import PortfolioHero from "@/components/PortfolioHero";
+import { useTranslation } from "@/i18n";
 
 gsap.registerPlugin(ScrollTrigger);
 
 const SCROLL_VH = 220;
+
+function StudioRevealEmptyMessage() {
+  const { t } = useTranslation();
+  return (
+    <section className="bg-background py-16 md:py-24">
+      <div className="px-4 md:px-6 text-center">
+        <p className="text-muted-foreground">
+          {t("studioRevealConfigure")}
+        </p>
+      </div>
+    </section>
+  );
+}
 
 export default function StudioMediaReveal() {
   const sectionRef = React.useRef<HTMLElement>(null);
@@ -165,13 +179,7 @@ export default function StudioMediaReveal() {
 
   if (!displayItems) {
     return (
-      <section className="bg-background py-16 md:py-24">
-        <div className="px-4 md:px-6 text-center">
-          <p className="text-muted-foreground">
-            Configure os slots do Studio reveal em Configurações do site.
-          </p>
-        </div>
-      </section>
+      <StudioRevealEmptyMessage />
     );
   }
 

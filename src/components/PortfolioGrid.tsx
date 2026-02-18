@@ -7,9 +7,11 @@ import MuxPlayer from "@mux/mux-player-react";
 import { getPublicCases, toPublicObjectUrl } from "@/lib/case-builder/queries";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 import { useCasesSection, ALL_ID } from "@/contexts/CasesSectionContext";
+import { useTranslation } from "@/i18n";
 
 function PortfolioGrid() {
   const { activeCategory } = useCasesSection();
+  const { t } = useTranslation();
   const { data: cases, isLoading, isError } = useQuery({
     queryKey: ["cases", "public"],
     queryFn: getPublicCases,
@@ -46,7 +48,7 @@ function PortfolioGrid() {
         <div id="work-bottom-sentinel" aria-hidden className="absolute bottom-0 left-0 right-0 h-px pointer-events-none" />
         <div className="px-6 md:px-10 lg:px-16 py-16 pb-28 md:pb-32 text-center">
           <p className="text-muted-foreground">
-            Não foi possível carregar os cases no momento.
+            {t("casesLoadError")}
           </p>
         </div>
       </section>
@@ -61,8 +63,8 @@ function PortfolioGrid() {
         <div className="px-6 md:px-10 lg:px-16 py-24 pb-28 md:pb-32 text-center">
           <p className="text-muted-foreground">
             {isFilteredEmpty
-              ? "Nenhum case encontrado para essa categoria."
-              : "Nenhum case publicado ainda."}
+              ? t("casesEmptyFilter")
+              : t("casesEmpty")}
           </p>
         </div>
       </section>
@@ -90,6 +92,7 @@ type PublicItem = ReturnType<typeof getPublicCases> extends Promise<(infer T)[]>
 // ── CaseCard ─────────────────────────────────────────────────────────
 
 function CaseCard({ item, index }: { item: PublicItem; index: number }) {
+  const { t } = useTranslation();
   const muxRef = React.useRef<any>(null);
   const videoRef = React.useRef<HTMLVideoElement | null>(null);
   const [hovered, setHovered] = React.useState(false);
@@ -140,7 +143,7 @@ function CaseCard({ item, index }: { item: PublicItem; index: number }) {
       <Link
         to={`/cases/${item.slug || item.id}`}
         className="group/link relative flex rounded-xl overflow-hidden bg-gradient-to-b from-blue-900 via-blue-900 to-blue-950 aspect-[4/3] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 cursor-case"
-        aria-label={`Ver case: ${item.title}`}
+        aria-label={`${t("caseViewAria")} ${item.title}`}
       >
         {/* Capa */}
         <div className="absolute inset-0">

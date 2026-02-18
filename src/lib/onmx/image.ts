@@ -62,7 +62,10 @@ export function getImageKitUrl(
 ): string {
   // Only proxy absolute URLs through ImageKit (web proxy / fetch).
   // Relative paths (local assets) should remain untouched.
+  // Mux already serves optimised thumbnails — skip ImageKit to avoid 400s
+  // from query-param conflicts in the web proxy.
   if (!IMAGEKIT_ENDPOINT || !isAbsoluteUrl(src)) return src;
+  if (src.includes("image.mux.com/")) return src;
 
   const tr = buildTransformString(options);
   const base = IMAGEKIT_ENDPOINT.replace(/\/$/, "");
@@ -83,6 +86,7 @@ export function getResponsiveSrcset(
 ): string {
   if (!IMAGEKIT_ENDPOINT || !isAbsoluteUrl(src) || widths.length === 0)
     return "";
+  if (src.includes("image.mux.com/")) return "";
 
   return widths
     .map((w) => {

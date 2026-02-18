@@ -5,6 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/lib/supabase/client";
+import { useTranslation } from "@/i18n";
 
 type ContactModalContextValue = {
   /** @deprecated Use ContactPopover instead. Kept for compatibility. */
@@ -23,6 +24,7 @@ const overshootTransition = { type: "spring" as const, stiffness: 260, damping: 
 
 function ContactFormContent({ onSuccess, idPrefix }: { onSuccess: () => void; idPrefix: string }) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const { t } = useTranslation();
 
   const onSubmit: React.FormEventHandler<HTMLFormElement> = async (e) => {
     e.preventDefault();
@@ -39,12 +41,12 @@ function ContactFormContent({ onSuccess, idPrefix }: { onSuccess: () => void; id
     const contactPreference = String(data.get("contactPreference") ?? "email");
 
     if (!prospectCompany || !name || !email) {
-      toast.error("Preencha Empresa, Nome e E-mail.");
+      toast.error(t("contactToastFillRequired"));
       return;
     }
 
     if (contactPreference === "whatsapp" && !whatsapp) {
-      toast.error("Informe seu WhatsApp para essa preferência.");
+      toast.error(t("contactToastWhatsAppRequired"));
       return;
     }
 
@@ -61,11 +63,11 @@ function ContactFormContent({ onSuccess, idPrefix }: { onSuccess: () => void; id
 
       if (error) throw error;
 
-      toast.success("Recebido. Vamos te chamar em até 1 dia útil.");
+      toast.success(t("contactToastSuccess"));
       form.reset();
       onSuccess();
     } catch (err) {
-      toast.error("Não conseguimos enviar agora. Tente novamente em instantes.");
+      toast.error(t("contactToastError"));
       // eslint-disable-next-line no-console
       console.error("[ContactModal] lead insert failed", err);
     } finally {
@@ -78,26 +80,26 @@ function ContactFormContent({ onSuccess, idPrefix }: { onSuccess: () => void; id
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
           <label htmlFor={`${idPrefix}-company`} className="sr-only">
-            Empresa
+            {t("contactCompany")}
           </label>
           <Input
             id={`${idPrefix}-company`}
             name="company"
             autoComplete="organization"
-            placeholder="Nome da empresa"
+            placeholder={t("contactCompanyPlaceholder")}
             required
             className="h-11 rounded-xl bg-muted/50 border-border"
           />
         </div>
         <div>
           <label htmlFor={`${idPrefix}-name`} className="sr-only">
-            Nome
+            {t("contactName")}
           </label>
           <Input
             id={`${idPrefix}-name`}
             name="name"
             autoComplete="name"
-            placeholder="Seu nome"
+            placeholder={t("contactNamePlaceholder")}
             required
             className="h-11 rounded-xl bg-muted/50 border-border"
           />
@@ -105,20 +107,20 @@ function ContactFormContent({ onSuccess, idPrefix }: { onSuccess: () => void; id
       </div>
       <div>
         <label htmlFor={`${idPrefix}-role`} className="sr-only">
-          Cargo
+          {t("contactRole")}
         </label>
         <Input
           id={`${idPrefix}-role`}
           name="role"
           autoComplete="organization-title"
-          placeholder="Seu cargo"
+          placeholder={t("contactRolePlaceholder")}
           className="h-11 rounded-xl bg-muted/50 border-border"
         />
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
           <label htmlFor={`${idPrefix}-email`} className="sr-only">
-            E-mail
+            {t("contactEmail")}
           </label>
           <Input
             id={`${idPrefix}-email`}
@@ -126,14 +128,14 @@ function ContactFormContent({ onSuccess, idPrefix }: { onSuccess: () => void; id
             name="email"
             autoComplete="email"
             inputMode="email"
-            placeholder="voce@empresa.com"
+            placeholder={t("contactEmailPlaceholder")}
             required
             className="h-11 rounded-xl bg-muted/50 border-border"
           />
         </div>
         <div>
           <label htmlFor={`${idPrefix}-whatsapp`} className="sr-only">
-            WhatsApp
+            {t("contactWhatsApp")}
           </label>
           <Input
             id={`${idPrefix}-whatsapp`}
@@ -141,14 +143,14 @@ function ContactFormContent({ onSuccess, idPrefix }: { onSuccess: () => void; id
             name="whatsapp"
             autoComplete="tel"
             inputMode="tel"
-            placeholder="(11) 99999-9999"
+            placeholder={t("contactWhatsAppPlaceholder")}
             className="h-11 rounded-xl bg-muted/50 border-border"
           />
         </div>
       </div>
       <fieldset className="space-y-3">
         <legend className="block text-sm font-medium text-foreground">
-          Preferência de canal
+          {t("contactChannelPreference")}
         </legend>
         <div className="grid grid-cols-2 gap-3">
           <label
@@ -163,7 +165,7 @@ function ContactFormContent({ onSuccess, idPrefix }: { onSuccess: () => void; id
               defaultChecked
               className="sr-only"
             />
-            <span>E-mail</span>
+            <span>{t("contactChannelEmail")}</span>
             <Check className="h-4 w-4 shrink-0 opacity-0 group-has-[:checked]:opacity-100" aria-hidden />
           </label>
           <label
@@ -177,7 +179,7 @@ function ContactFormContent({ onSuccess, idPrefix }: { onSuccess: () => void; id
               value="whatsapp"
               className="sr-only"
             />
-            <span>WhatsApp</span>
+            <span>{t("contactChannelWhatsApp")}</span>
             <Check className="h-4 w-4 shrink-0 opacity-0 group-has-[:checked]:opacity-100" aria-hidden />
           </label>
         </div>
@@ -188,11 +190,11 @@ function ContactFormContent({ onSuccess, idPrefix }: { onSuccess: () => void; id
           disabled={isSubmitting}
           className="h-12 min-w-[12rem] w-fit rounded-2xl border-0 bg-primary px-8 font-display text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:brightness-110 disabled:opacity-60"
         >
-          {isSubmitting ? "Enviando..." : "Agendar uma conversa"}
+          {isSubmitting ? t("contactSubmitting") : t("contactSubmit")}
         </button>
       </div>
       <p className="text-center text-xs text-muted-foreground pt-1">
-        Resposta em até 1 dia útil. Sem spam.
+        {t("contactFooterNote")}
       </p>
     </form>
   );
@@ -209,6 +211,7 @@ export type ContactPopoverProps = {
 export function ContactPopover({ children }: ContactPopoverProps) {
   const [open, setOpen] = React.useState(false);
   const idPrefix = React.useId().replace(/:/g, "-");
+  const { t } = useTranslation();
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -227,10 +230,10 @@ export function ContactPopover({ children }: ContactPopoverProps) {
         >
           <div className="space-y-2">
             <h2 className="text-xl font-display font-semibold tracking-tight text-foreground">
-              Falar com a TRESSDE®
+              {t("contactTitle")}
             </h2>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Converse com a TRESSDE e tenha um plano completo para comunicar, lançar e evoluir com consistência.
+              {t("contactIntro")}
             </p>
           </div>
           <ContactFormContent idPrefix={idPrefix} onSuccess={() => setOpen(false)} />

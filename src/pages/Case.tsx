@@ -13,6 +13,7 @@ import type { VideoContent } from "@/lib/case-builder/types";
 import { normalizeContainerContent } from "@/lib/case-builder/types";
 import PublicContainerBlock from "@/components/case-blocks-public/PublicContainerBlock";
 import PublicVideoBlock from "@/components/case-blocks-public/PublicVideoBlock";
+import { useTranslation } from "@/i18n";
 
 type CaseCategory = {
   id: string;
@@ -100,7 +101,7 @@ async function getCaseBySlug(slug: string): Promise<CaseDetail> {
     .maybeSingle();
 
   if (error) throw error;
-  if (!data) throw new Error("Case não encontrado.");
+  if (!data) throw new Error("Case not found."); // translated in UI
 
   const row = data as unknown as {
     id: string;
@@ -148,6 +149,7 @@ const FROM_CASE_PAGE_KEY = "tressde_from_case_page";
 
 export default function CasePage() {
   const { slug } = useParams<{ slug: string }>();
+  const { t } = useTranslation();
   const [dockMenu, setDockMenu] = React.useState(false);
   const dockSentinelRef = React.useRef<HTMLDivElement | null>(null);
   const [infoOpen, setInfoOpen] = React.useState(false);
@@ -342,7 +344,7 @@ export default function CasePage() {
                 "hover:bg-black/55",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
               ].join(" ")}
-              aria-label="Abrir informações do projeto"
+              aria-label={t("caseOpenInfo")}
               aria-expanded={infoOpen}
             >
               <Plus
@@ -358,7 +360,7 @@ export default function CasePage() {
               <div
                 ref={infoMenuRef}
                 role="dialog"
-                aria-label="Informações do projeto"
+                aria-label={t("caseInfoDialogLabel")}
                 className={[
                   "absolute left-0 mt-3 w-[min(380px,calc(100vw-2rem))]",
                   "rounded-2xl",
@@ -371,21 +373,21 @@ export default function CasePage() {
               >
                 <div className="space-y-3 text-sm">
                   <div>
-                    <div className="text-[11px] text-white/60">Cliente</div>
+                    <div className="text-[11px] text-white/60">{t("caseLabelClient")}</div>
                     <div className="font-medium">
                       {caseQuery.data?.client_name ?? "—"}
                     </div>
                   </div>
 
                   <div>
-                    <div className="text-[11px] text-white/60">Projeto</div>
+                    <div className="text-[11px] text-white/60">{t("caseLabelProject")}</div>
                     <div className="font-medium">
                       {caseQuery.data?.title ?? "—"}
                     </div>
                   </div>
 
                   <div>
-                    <div className="text-[11px] text-white/60">Descrição</div>
+                    <div className="text-[11px] text-white/60">{t("caseLabelDescription")}</div>
                     <div className="text-white/90 leading-relaxed line-clamp-4">
                       {caseQuery.data?.summary ?? "—"}
                     </div>
@@ -393,12 +395,12 @@ export default function CasePage() {
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-[11px] text-white/60">Ano</div>
+                      <div className="text-[11px] text-white/60">{t("caseLabelYear")}</div>
                       <div className="font-medium tabular-nums">
                         {caseQuery.data?.year ? String(caseQuery.data.year) : "—"}
                       </div>
                     </div>
-                    <div className="text-[11px] text-white/50">ESC para fechar</div>
+                    <div className="text-[11px] text-white/50">{t("caseEscToClose")}</div>
                   </div>
                 </div>
               </div>
@@ -415,11 +417,11 @@ export default function CasePage() {
             </div>
           ) : caseQuery.isError || !caseQuery.data ? (
             <div className="border border-border bg-card p-8 text-sm text-muted-foreground">
-              Case não encontrado (ou ainda não publicado).
+              {t("caseNotFound")}
             </div>
           ) : !hasAnyMedia ? (
             <div className="border border-border bg-card p-8 text-sm text-muted-foreground">
-              Esse case ainda não tem mídia.
+              {t("caseNoMedia")}
             </div>
           ) : (
             hasContainerLayout ? (
@@ -477,9 +479,9 @@ export default function CasePage() {
                     variant="ghost"
                     className="h-10 px-3 rounded-full hover:bg-black/[0.04]"
                   >
-                    <Link to="/#cases" aria-label="Voltar aos cases">
+                    <Link to="/#cases" aria-label={t("caseBackAria")}>
                       <ChevronLeft className="h-4 w-4 mr-1" aria-hidden="true" />
-                      <span className="text-sm font-medium">Voltar</span>
+                      <span className="text-sm font-medium">{t("caseBack")}</span>
                     </Link>
                   </Button>
 
@@ -495,7 +497,7 @@ export default function CasePage() {
                 asChild
                 className="h-12 px-4 rounded-full shadow-lg shadow-black/10"
               >
-                <Link to="/#contato">Fale com a gente</Link>
+                <Link to="/#contato">{t("caseTalkToUs")}</Link>
               </Button>
             </div>
           </div>

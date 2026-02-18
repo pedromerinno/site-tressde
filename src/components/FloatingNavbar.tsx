@@ -1,19 +1,18 @@
 import * as React from "react";
+import { Link } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Globe } from "lucide-react";
 import { useCasesSection, ALL_ID } from "@/contexts/CasesSectionContext";
 import { useContactModal, ContactPopover } from "@/contexts/ContactModalContext";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { useTranslation } from "@/i18n";
 
-type NavItem = {
-  label: string;
-  href: string;
-};
-
-const navItems: NavItem[] = [
-  { label: "Início", href: "#inicio" },
-  { label: "Work", href: "#work" },
-  { label: "Contato", href: "#contato" },
-];
+function useNavItems(): { label: string; href: string }[] {
+  const { t } = useTranslation();
+  return [
+    { label: t("navHome"), href: "/" },
+    { label: t("navWork"), href: "/#work" },
+  ];
+}
 
 const SCROLL_THRESHOLD = 80;
 const FLOATING_NAV_DEFAULT_BOTTOM = 28;
@@ -60,8 +59,9 @@ function FloatingCategoryFilter() {
   const { activeCategory, setActiveCategory, categories } = useCasesSection();
   const reduceMotion = useReducedMotion();
   const stickyBottom = useStickyBottomAboveFooter();
+  const { t } = useTranslation();
 
-  const filterItems = [{ id: ALL_ID, label: "Todos" }, ...categories.map((c) => ({ id: c.id, label: c.name }))];
+  const filterItems = [{ id: ALL_ID, label: t("filterAll") }, ...categories.map((c) => ({ id: c.id, label: c.name }))];
 
   const containerClass =
     "flex items-center justify-center gap-1.5 rounded-full border border-black/10 bg-white/80 py-2 shadow-[0_14px_50px_rgba(0,0,0,0.14)] backdrop-blur-md overflow-x-auto scrollbar-hide w-fit max-w-[calc(100%-2.5rem)]";
@@ -135,6 +135,8 @@ function FloatingNavbarContent() {
   const [scrolled, setScrolled] = React.useState(false);
   const contactModal = useContactModal();
   const stickyBottom = useStickyBottomAboveFooter();
+  const navItems = useNavItems();
+  const { t } = useTranslation();
 
   React.useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY >= SCROLL_THRESHOLD);
@@ -151,19 +153,19 @@ function FloatingNavbarContent() {
 
   const navContent = (
     <div className="flex items-center justify-between gap-4 rounded-full border border-black/10 bg-white/80 px-4 py-3 shadow-[0_14px_50px_rgba(0,0,0,0.14)] backdrop-blur-md md:px-5">
-      <a
-        href="#inicio"
+      <Link
+        to="/"
         className="flex shrink-0 items-center gap-2 rounded-full px-2 py-1 font-display text-[15px] font-semibold tracking-tight text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-        aria-label="Ir para o início"
+        aria-label={t("ariaGoHome")}
       >
         TRESSDE®
-      </a>
+      </Link>
 
-      <nav aria-label="Navegação principal" className="hidden min-w-0 shrink md:block">
+      <nav aria-label={t("ariaMainNav")} className="hidden min-w-0 shrink md:block">
         <ul className="flex items-center gap-6">
           {navItems.map((item) => (
             <li key={item.href}>
-              {item.href === "#contato" && contactModal ? (
+              {item.href === "/#contato" && contactModal ? (
                 <ContactPopover>
                   <button
                     type="button"
@@ -173,12 +175,12 @@ function FloatingNavbarContent() {
                   </button>
                 </ContactPopover>
               ) : (
-                <a
-                  href={item.href}
+                <Link
+                  to={item.href}
                   className="rounded-full px-2 py-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 >
                   {item.label}
-                </a>
+                </Link>
               )}
             </li>
           ))}
@@ -186,13 +188,10 @@ function FloatingNavbarContent() {
       </nav>
 
       <div className="flex shrink-0 items-center gap-2">
-        <button
-          type="button"
-          className="hidden sm:inline-flex h-9 w-9 items-center justify-center rounded-full border border-black/10 bg-white/60 text-muted-foreground transition-colors hover:bg-white hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          aria-label="Mudar idioma"
-        >
-          <Globe className="h-4 w-4" aria-hidden="true" />
-        </button>
+        <LanguageSelector
+          variant="icon"
+          triggerClassName="hidden sm:inline-flex h-9 w-9 items-center justify-center rounded-full border border-black/10 bg-white/60 text-muted-foreground transition-colors hover:bg-white hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        />
 
         {contactModal ? (
           <ContactPopover>
@@ -200,7 +199,7 @@ function FloatingNavbarContent() {
               type="button"
               className="inline-flex h-9 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
-              Falar com a TRESSDE®
+              {t("ctaTalkToTressde")}
             </button>
           </ContactPopover>
         ) : (
@@ -208,7 +207,7 @@ function FloatingNavbarContent() {
             href="#contato"
             className="inline-flex h-9 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
-            Falar com a TRESSDE®
+            {t("ctaTalkToTressde")}
           </a>
         )}
       </div>

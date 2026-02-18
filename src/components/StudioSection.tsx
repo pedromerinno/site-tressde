@@ -2,15 +2,14 @@ import * as React from "react";
 import { Link } from "react-router-dom";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useTranslation } from "@/i18n";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const copy =
-  "TRESSDE is a studio built to imagine. Born in Brazil and built for the world. Our motion pieces combine bold aesthetics, precise 3D execution and a cultural perspective that brings stories to life.";
-
-const words = copy.split(/\s+/);
-
 export default function StudioSection() {
+  const { t } = useTranslation();
+  const copy = t("studioCopy");
+  const words = copy.split(/\s+/);
   const sectionRef = React.useRef<HTMLElement | null>(null);
   const textContainerRef = React.useRef<HTMLParagraphElement | null>(null);
   const ctaRef = React.useRef<HTMLAnchorElement | null>(null);
@@ -80,7 +79,7 @@ export default function StudioSection() {
     }, section);
 
     return () => ctx.revert();
-  }, []);
+  }, [copy]);
 
   return (
     <section ref={sectionRef} id="estudio" className="bg-background">
@@ -91,7 +90,7 @@ export default function StudioSection() {
             className="font-display text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-semibold tracking-tight text-foreground max-w-full"
             style={{ lineHeight: '110%' }}
           >
-            <span className="inline-block text-sm font-medium text-muted-foreground tracking-[0.025em] align-top mr-8 md:mr-12 lg:mr-16">The studio</span>
+            <span className="inline-block text-sm font-medium text-muted-foreground tracking-[0.025em] align-top mr-8 md:mr-12 lg:mr-16">{t("studioTheStudio")}</span>
             {words.map((word, i) => (
               <span
                 key={i}
@@ -107,7 +106,7 @@ export default function StudioSection() {
                 to="/#contato"
                 className="inline-flex h-9 md:h-10 px-4 md:px-5 items-center justify-center rounded-full bg-[hsl(var(--primary))] text-[hsl(0,0%,100%)] text-sm font-semibold tracking-[0.01em] opacity-100 transition-colors hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 align-middle"
               >
-                Learn more
+                {t("studioLearnMore")}
               </Link>
             </span>
           </p>

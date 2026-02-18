@@ -5,6 +5,7 @@ import { CaseCursorStyles } from "@/components/CaseCursorStyles";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Index from "./pages/Index";
+import Servicos from "./pages/Servicos";
 import CasePage from "./pages/Case";
 import NotFound from "./pages/NotFound";
 import AdminLogin from "./pages/admin/AdminLogin";
@@ -18,6 +19,8 @@ import CaseBuilder from "./pages/admin/CaseBuilder";
 import CasePreview from "./pages/admin/CasePreview";
 import AdminSite from "./pages/admin/AdminSite";
 import { SiteMeta } from "@/components/SiteMeta";
+import CookieBanner from "@/components/CookieBanner";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 
 const queryClient = new QueryClient();
 
@@ -27,9 +30,15 @@ function AppRoutes() {
 
   return (
     <>
-      {isPublic && <SiteMeta />}
+      {isPublic && (
+        <>
+          <CookieBanner />
+          <SiteMeta />
+        </>
+      )}
       <Routes>
         <Route path="/" element={<Index />} />
+        <Route path="/servicos" element={<Servicos />} />
         <Route path="/cases/:slug" element={<CasePage />} />
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin" element={<AdminLayout />}>
@@ -57,7 +66,9 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AppRoutes />
+        <LanguageProvider>
+          <AppRoutes />
+        </LanguageProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
