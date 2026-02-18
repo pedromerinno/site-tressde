@@ -20,18 +20,18 @@ function PortfolioHero() {
           </p>
           <nav
             aria-label={t("ariaMainNav")}
-            className="flex items-center gap-10 shrink-0"
+            className="flex items-center gap-8 shrink-0 rounded-full bg-muted/80 px-5 py-2.5 backdrop-blur-sm"
           >
+            <LanguageSelector variant="code" />
             <a
               href="#work"
-              className="text-sm font-medium text-foreground hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
+              className="text-sm font-medium text-foreground hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-full px-1 py-0.5"
             >
               {t("navWork")}
             </a>
-            <LanguageSelector variant="code" />
             <a
               href="#contato"
-              className="text-sm font-medium text-foreground hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
+              className="text-sm font-medium text-foreground hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-full px-1 py-0.5"
             >
               {t("navContact")}
             </a>
