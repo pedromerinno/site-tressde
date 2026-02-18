@@ -1,7 +1,7 @@
 import type { TextContent } from "@/lib/case-builder/types";
 import { cn } from "@/lib/utils";
 
-type Props = { content: TextContent };
+type Props = { content: TextContent; noSpacing?: boolean };
 
 function sanitizeRichHtml(input: string): string {
   try {
@@ -20,7 +20,7 @@ function sanitizeRichHtml(input: string): string {
   }
 }
 
-export default function PublicTextBlock({ content }: Props) {
+export default function PublicTextBlock({ content, noSpacing }: Props) {
   const format = content.format ?? "plain";
   const hasRich = format === "rich" && Boolean(content.html?.trim?.());
   const hasPlain = Boolean(content.body?.trim?.());
@@ -31,12 +31,14 @@ export default function PublicTextBlock({ content }: Props) {
   const preset = content.preset ?? "body";
   const colors = content.colors ?? {};
   const background = Boolean(content.background);
-  const padding = {
-    top: Math.max(0, Number(content.padding?.top ?? 0)),
-    bottom: Math.max(0, Number(content.padding?.bottom ?? 0)),
-    left: Math.max(0, Number(content.padding?.left ?? 30)),
-    right: Math.max(0, Number(content.padding?.right ?? 30)),
-  };
+  const padding = noSpacing
+    ? { top: 0, bottom: 0, left: 0, right: 0 }
+    : {
+        top: Math.max(0, Number(content.padding?.top ?? 0)),
+        bottom: Math.max(0, Number(content.padding?.bottom ?? 0)),
+        left: Math.max(0, Number(content.padding?.left ?? 30)),
+        right: Math.max(0, Number(content.padding?.right ?? 30)),
+      };
 
   const baseColor = colors.text?.trim?.() ? colors.text : undefined;
   const titleColor =

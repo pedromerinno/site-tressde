@@ -14,14 +14,14 @@ import PublicTextBlock from "./PublicTextBlock";
 import PublicVideoBlock from "./PublicVideoBlock";
 import type { PreviewHoverTarget } from "./CaseBlocksRenderer";
 
-function ItemRenderer({ item }: { item: SlotContent }) {
+function ItemRenderer({ item, noSpacing }: { item: SlotContent; noSpacing?: boolean }) {
   switch (item.type) {
     case "image":
-      return <PublicImageBlock content={item.content as ImageContent} />;
+      return <PublicImageBlock content={item.content as ImageContent} noSpacing={noSpacing} />;
     case "text":
-      return <PublicTextBlock content={item.content as TextContent} />;
+      return <PublicTextBlock content={item.content as TextContent} noSpacing={noSpacing} />;
     case "video":
-      return <PublicVideoBlock content={item.content as VideoContent} />;
+      return <PublicVideoBlock content={item.content as VideoContent} noSpacing={noSpacing} />;
     default:
       return null;
   }
@@ -29,6 +29,8 @@ function ItemRenderer({ item }: { item: SlotContent }) {
 
 type Props = {
   content: ContainerContent;
+  /** Na página single case: remove espaços e preloads */
+  noSpacing?: boolean;
   interactive?: {
     blockId: string;
     onHover: (target: PreviewHoverTarget) => void;
@@ -36,7 +38,7 @@ type Props = {
   };
 };
 
-export default function PublicContainerBlock({ content, interactive }: Props) {
+export default function PublicContainerBlock({ content, noSpacing, interactive }: Props) {
   const c = normalizeContainerContent(content);
   const bgColor = c.backgroundColor?.trim?.() || undefined;
   return (
@@ -143,7 +145,7 @@ export default function PublicContainerBlock({ content, interactive }: Props) {
                         : undefined
                     }
                   >
-                    <ItemRenderer item={item} />
+                    <ItemRenderer item={item} noSpacing={noSpacing} />
                   </div>
                 );
               })}

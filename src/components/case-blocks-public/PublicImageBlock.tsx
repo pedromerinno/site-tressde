@@ -3,9 +3,9 @@ import { OptimizedImage } from "@/components/ui/optimized-image";
 import type { ImageContent } from "@/lib/case-builder/types";
 import { cn } from "@/lib/utils";
 
-type Props = { content: ImageContent };
+type Props = { content: ImageContent; noSpacing?: boolean };
 
-export default function PublicImageBlock({ content }: Props) {
+export default function PublicImageBlock({ content, noSpacing }: Props) {
   const src = content.url?.trim?.() ? content.url : "/image-fallback.svg";
 
   const aspect = content.aspect ?? "auto";
@@ -32,12 +32,14 @@ export default function PublicImageBlock({ content }: Props) {
           : zoomPct === 20
             ? "group-hover:scale-[1.2]"
             : "";
-  const padding = {
-    top: Math.max(0, Number(content.padding?.top ?? 0)),
-    bottom: Math.max(0, Number(content.padding?.bottom ?? 0)),
-    left: Math.max(0, Number(content.padding?.left ?? 0)),
-    right: Math.max(0, Number(content.padding?.right ?? 0)),
-  };
+  const padding = noSpacing
+    ? { top: 0, bottom: 0, left: 0, right: 0 }
+    : {
+        top: Math.max(0, Number(content.padding?.top ?? 0)),
+        bottom: Math.max(0, Number(content.padding?.bottom ?? 0)),
+        left: Math.max(0, Number(content.padding?.left ?? 0)),
+        right: Math.max(0, Number(content.padding?.right ?? 0)),
+      };
 
   const widthBase =
     widthMobile === "fill"

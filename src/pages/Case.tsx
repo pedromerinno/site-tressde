@@ -423,18 +423,19 @@ export default function CasePage() {
             </div>
           ) : (
             hasContainerLayout ? (
-              <div className="space-y-0">
+              <div className="flex flex-col gap-0 [&>*]:mb-0 [&>*]:mt-0 [&>*+*]:-mt-1 [&_img]:block [&_video]:block [&_mux-player]:block">
                 {(blocksQuery.data ?? [])
                   .filter((b) => b.type === "container")
                   .map((block) => (
                     <PublicContainerBlock
                       key={block.id}
                       content={normalizeContainerContent(block.content as any)}
+                      noSpacing
                     />
                   ))}
               </div>
             ) : (
-              <div>
+              <div className="flex flex-col gap-0 [&>*]:mb-0 [&>*]:mt-0 [&>*+*]:-mt-1 [&_img]:block [&_video]:block [&_mux-player]:block">
                 {fallbackMedia.map((item) =>
                   "url" in item ? (
                     <OptimizedImage
@@ -447,8 +448,8 @@ export default function CasePage() {
                       className="w-full h-auto"
                     />
                   ) : (
-                    <div key={item.id}>
-                      <PublicVideoBlock content={item.content} />
+                    <div key={item.id} className="[&:not(:last-child)]:mb-0">
+                      <PublicVideoBlock content={item.content} noSpacing />
                     </div>
                   ),
                 )}

@@ -40,24 +40,44 @@ export function CasesSectionProvider({ children }: { children: React.ReactNode }
     }
   }, []);
 
+  // Topo de #work entra → estamos na seção → mostrar filtros
+  // Bottom sentinel entra → fim da seção surgiu → voltar ao menu
   React.useEffect(() => {
-    const el = document.getElementById("work");
-    if (!el) return;
+    const topEl = document.getElementById("work");
+    const bottomEl = document.getElementById("work-bottom-sentinel");
+    if (!topEl) return;
 
-    const observer = new IntersectionObserver(
+    let topIntersecting = false;
+    let bottomIntersecting = false;
+
+    const updateShowFilters = () => {
+      const inSection = topIntersecting && !bottomIntersecting;
+      setIsInCasesSection(inSection);
+      if (inSection) setForceShowNav(false);
+    };
+
+    const topObserver = new IntersectionObserver(
       ([entry]) => {
-        const intersecting = entry?.isIntersecting ?? false;
-        setIsInCasesSection(intersecting);
-        if (intersecting) setForceShowNav(false);
+        topIntersecting = entry?.isIntersecting ?? false;
+        updateShowFilters();
       },
-      {
-        rootMargin: "10% 0px -30% 0px",
-        threshold: 0,
-      }
+      { rootMargin: "15% 0px -25% 0px", threshold: 0 }
     );
 
-    observer.observe(el);
-    return () => observer.disconnect();
+    const bottomObserver = new IntersectionObserver(
+      ([entry]) => {
+        bottomIntersecting = entry?.isIntersecting ?? false;
+        updateShowFilters();
+      },
+      { rootMargin: "0px 0px -5% 0px", threshold: 0 }
+    );
+
+    topObserver.observe(topEl);
+    if (bottomEl) bottomObserver.observe(bottomEl);
+    return () => {
+      topObserver.disconnect();
+      bottomObserver.disconnect();
+    };
   }, []);
 
   const showFilterChips = isInCasesSection && !forceShowNav;

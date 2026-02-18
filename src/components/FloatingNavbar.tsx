@@ -53,15 +53,15 @@ function FloatingCategoryFilter() {
     );
   }
 
-  const springOvershoot = { type: "spring" as const, stiffness: 380, damping: 28 };
+  const transition = { type: "spring" as const, stiffness: 380, damping: 28 };
 
   return (
     <motion.div
       key="floating-filter"
-      initial={{ scale: 0.9 }}
-      animate={{ scale: 1 }}
-      exit={{ scale: 0.9 }}
-      transition={springOvershoot}
+      initial={{ opacity: 0, y: 24, scale: 0.96 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 20, scale: 0.96 }}
+      transition={transition}
       style={{ x: "-50%" }}
       className="fixed bottom-4 left-1/2 z-50 origin-center w-fit max-w-[calc(100%-2.5rem)]"
     >
@@ -169,7 +169,7 @@ function FloatingNavbarContent() {
     </div>
   );
 
-  const springOvershoot = { type: "spring" as const, stiffness: 380, damping: 28 };
+  const transition = { type: "spring" as const, stiffness: 380, damping: 28 };
 
   return reduceMotion ? (
     <div
@@ -182,10 +182,10 @@ function FloatingNavbarContent() {
   ) : (
     <motion.div
       key="floating-nav"
-      initial={{ scale: 0.9 }}
-      animate={{ scale: 1 }}
-      exit={{ scale: 0.9 }}
-      transition={springOvershoot}
+      initial={{ opacity: 0, y: 24, scale: 0.96 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 20, scale: 0.96 }}
+      transition={transition}
       style={{ x: "-50%", ...widthStyle }}
       className="fixed bottom-4 left-1/2 z-50 origin-center"
     >

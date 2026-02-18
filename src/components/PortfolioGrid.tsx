@@ -24,7 +24,8 @@ function PortfolioGrid() {
 
   if (isLoading) {
     return (
-      <section id="work" className="bg-background">
+      <section id="work" className="bg-background relative">
+        <div id="work-bottom-sentinel" aria-hidden className="absolute bottom-0 left-0 right-0 h-px pointer-events-none" />
         <div className="px-6 md:px-10 lg:px-16 pt-4 md:pt-6 lg:pt-8 pb-12 md:pb-16">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 lg:gap-5">
             {Array.from({ length: 4 }).map((_, i) => (
@@ -41,7 +42,8 @@ function PortfolioGrid() {
 
   if (isError) {
     return (
-      <section id="work" className="bg-background">
+      <section id="work" className="bg-background relative">
+        <div id="work-bottom-sentinel" aria-hidden className="absolute bottom-0 left-0 right-0 h-px pointer-events-none" />
         <div className="px-6 md:px-10 lg:px-16 py-16 text-center">
           <p className="text-muted-foreground">
             Não foi possível carregar os cases no momento.
@@ -54,7 +56,8 @@ function PortfolioGrid() {
   if (items.length === 0) {
     const isFilteredEmpty = (cases?.length ?? 0) > 0 && activeCategory !== ALL_ID;
     return (
-      <section id="work" className="bg-background min-h-[70vh] flex flex-col justify-center">
+      <section id="work" className="bg-background relative min-h-[70vh] flex flex-col justify-center">
+        <div id="work-bottom-sentinel" aria-hidden className="absolute bottom-0 left-0 right-0 h-px pointer-events-none" />
         <div className="px-6 md:px-10 lg:px-16 py-24 text-center">
           <p className="text-muted-foreground">
             {isFilteredEmpty
@@ -67,7 +70,8 @@ function PortfolioGrid() {
   }
 
   return (
-    <section id="work" className="bg-background">
+    <section id="work" className="bg-background relative">
+      <div id="work-bottom-sentinel" aria-hidden className="absolute bottom-0 left-0 right-0 h-px pointer-events-none" />
       <div className="px-6 md:px-10 lg:px-16 pt-4 md:pt-6 lg:pt-8 pb-12 md:pb-16 lg:pb-20">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 lg:gap-5">
           {items.map((item, i) => (

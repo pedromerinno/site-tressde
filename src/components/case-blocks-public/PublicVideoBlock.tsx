@@ -24,7 +24,15 @@ function getEmbedUrl(url: string, provider: string): string | null {
   return null;
 }
 
-type Props = { content: VideoContent };
+type Props = {
+  content: VideoContent;
+  /** Na página single case: remove padding e usa preview blur em vez de preload */
+  noSpacing?: boolean;
+};
+
+function getMuxBlurThumbnail(playbackId: string): string {
+  return `https://image.mux.com/${playbackId}/thumbnail.webp?width=40&fit_mode=smartcrop&time=0`;
+}
 
 function clampPct(v: any, fallback = 100) {
   const n = Number(v);
@@ -50,9 +58,11 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
 function VideoFrame({
   content,
   children,
+  noSpacing,
 }: {
   content: VideoContent;
   children: React.ReactNode;
+  noSpacing?: boolean;
 }) {
   const widthMobilePct = clampPct(content.widthMobilePct, 100);
   const widthDesktopPct = clampPct(content.widthDesktopPct, 100);
@@ -62,12 +72,14 @@ function VideoFrame({
   const borderWidth = clampPx(content.borderWidth, 1, 24);
   const borderOpacity = clampPct(content.borderOpacity, 100);
   const radius = clampPx(content.radius, 0, 80);
-  const padding = {
-    top: clampPx(content.padding?.top, 0, 240),
-    bottom: clampPx(content.padding?.bottom, 0, 240),
-    left: clampPx(content.padding?.left, 0, 240),
-    right: clampPx(content.padding?.right, 0, 240),
-  };
+  const padding = noSpacing
+    ? { top: 0, bottom: 0, left: 0, right: 0 }
+    : {
+        top: clampPx(content.padding?.top, 0, 240),
+        bottom: clampPx(content.padding?.bottom, 0, 240),
+        left: clampPx(content.padding?.left, 0, 240),
+        right: clampPx(content.padding?.right, 0, 240),
+      };
 
   const rgb = hexToRgb(borderColor);
   const borderAlpha = borderOpacity / 100;
@@ -109,14 +121,16 @@ function VideoFallback({
   aspectClass,
   label,
   content,
+  noSpacing,
 }: {
   aspectClass: string;
   label: string;
   content: VideoContent;
+  noSpacing?: boolean;
 }) {
   const showPlaceholderBorder = (content.borderStyle ?? "none") !== "solid";
   return (
-    <VideoFrame content={content}>
+    <VideoFrame content={content} noSpacing={noSpacing}>
       <div
         className={cn(
           "w-full",
@@ -139,7 +153,7 @@ function VideoFallback({
   );
 }
 
-export default function PublicVideoBlock({ content }: Props) {
+export default function PublicVideoBlock({ content, noSpacing }: Props) {
   const aspect = ASPECT_MAP[content.aspect] ?? ASPECT_MAP["16/9"];
   const controls = content.controls ?? true;
   const autoPlay = content.autoplay ?? false;
@@ -156,25 +170,37 @@ export default function PublicVideoBlock({ content }: Props) {
         aspectClass={aspect}
         label={hasMux ? "Processando vídeo…" : "Vídeo"}
         content={content}
+        noSpacing={noSpacing}
       />
     );
   }
 
   if (content.provider === "mux" && content.muxPlaybackId) {
     const ref = React.useRef<any>(null);
+    const [blurVisible, setBlurVisible] = React.useState(true);
+    const blurThumbnail = getMuxBlurThumbnail(content.muxPlaybackId);
 
     React.useEffect(() => {
       if (!autoPlay) return;
       const el = ref.current;
       if (!el?.play) return;
-      // Best-effort: start playback when toggling autoplay on.
       Promise.resolve()
         .then(() => el.play())
         .catch(() => {});
     }, [autoPlay, content.muxPlaybackId]);
 
-    // Mux Player may still show controls on hover depending on theme/autohide behavior.
-    // When the user disables controls, we enforce it via the supported CSS variable.
+    React.useEffect(() => {
+      const el = ref.current;
+      if (!el) return;
+      const onReady = () => setBlurVisible(false);
+      el.addEventListener("loadeddata", onReady);
+      el.addEventListener("playing", onReady);
+      return () => {
+        el.removeEventListener("loadeddata", onReady);
+        el.removeEventListener("playing", onReady);
+      };
+    }, [content.muxPlaybackId]);
+
     const muxStyle = controls
       ? undefined
       : ({
@@ -185,21 +211,38 @@ export default function PublicVideoBlock({ content }: Props) {
         } as React.CSSProperties);
 
     return (
-      <VideoFrame content={content}>
-        <div className={controls ? "w-full" : "w-full mux-no-controls"}>
-          <MuxPlayer
-            ref={ref}
-            playbackId={content.muxPlaybackId}
-            streamType="on-demand"
-            className={`w-full ${aspect}`}
-            style={muxStyle}
-            controls={controls}
-            hideControls={!controls}
-            autoPlay={autoPlay ? "muted" : undefined}
-            muted={autoPlay || !controls}
-            playsInline
-            loop={loop}
-          />
+      <VideoFrame content={content} noSpacing={noSpacing}>
+        <div className={cn("relative w-full", aspect)}>
+          {/* Blur preview enquanto o vídeo carrega (Mux thumbnail LQIP) */}
+          <div
+            aria-hidden
+            className={cn(
+              "absolute inset-0 z-10 transition-opacity duration-500 pointer-events-none",
+              blurVisible ? "opacity-100" : "opacity-0",
+            )}
+          >
+            <img
+              src={blurThumbnail}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover scale-150 blur-2xl"
+            />
+          </div>
+          <div className={cn("relative", controls ? "w-full" : "w-full mux-no-controls")}>
+            <MuxPlayer
+              ref={ref}
+              playbackId={content.muxPlaybackId}
+              streamType="on-demand"
+              preload="none"
+              className={`w-full ${aspect}`}
+              style={muxStyle}
+              controls={controls}
+              hideControls={!controls}
+              autoPlay={autoPlay ? "muted" : undefined}
+              muted={autoPlay || !controls}
+              playsInline
+              loop={loop}
+            />
+          </div>
         </div>
       </VideoFrame>
     );
@@ -217,7 +260,7 @@ export default function PublicVideoBlock({ content }: Props) {
     }, [autoPlay, content.url]);
 
     return (
-      <VideoFrame content={content}>
+      <VideoFrame content={content} noSpacing={noSpacing}>
         <video
           ref={videoRef}
           src={content.url}
@@ -226,6 +269,7 @@ export default function PublicVideoBlock({ content }: Props) {
           muted={autoPlay || !controls}
           playsInline
           loop={loop}
+          preload="none"
           className={`w-full ${aspect}`}
         />
       </VideoFrame>
@@ -261,11 +305,11 @@ export default function PublicVideoBlock({ content }: Props) {
     return query ? `${embedUrlBase}?${query}` : embedUrlBase;
   })();
   if (!embedUrl) {
-    return <VideoFallback aspectClass={aspect} label="Vídeo" content={content} />;
+    return <VideoFallback aspectClass={aspect} label="Vídeo" content={content} noSpacing={noSpacing} />;
   }
 
   return (
-    <VideoFrame content={content}>
+    <VideoFrame content={content} noSpacing={noSpacing}>
       <div className={`relative ${aspect}`}>
         <iframe
           src={embedUrl}
