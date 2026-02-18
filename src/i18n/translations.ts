@@ -19,6 +19,7 @@ const pt = {
   // Footer
   footerPartOf: "Parte do grupo MNNO®",
   footerRights: "Todos os direitos reservados.",
+  footerLetsTalk: "Vamos conversar",
   footerTalkToTeam: "Fale com nosso time",
 
   // Cookie banner
@@ -185,6 +186,7 @@ const enMap: Record<TranslationKey, string> = {
 
   footerPartOf: "Part of MNNO® Group",
   footerRights: "All rights reserved.",
+  footerLetsTalk: "Let's Talk",
   footerTalkToTeam: "Talk to our team",
 
   cookieMessage:
@@ -335,6 +337,7 @@ const esMap: Record<TranslationKey, string> = {
 
   footerPartOf: "Parte del grupo MNNO®",
   footerRights: "Todos los derechos reservados.",
+  footerLetsTalk: "Hablemos",
   footerTalkToTeam: "Habla con nuestro equipo",
 
   cookieMessage:
