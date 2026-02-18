@@ -2,7 +2,7 @@ import * as React from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Globe } from "lucide-react";
 import { useCasesSection, ALL_ID } from "@/contexts/CasesSectionContext";
-import { useContactModal } from "@/contexts/ContactModalContext";
+import { useContactModal, ContactPopover } from "@/contexts/ContactModalContext";
 
 type NavItem = {
   label: string;
@@ -16,10 +16,50 @@ const navItems: NavItem[] = [
 ];
 
 const SCROLL_THRESHOLD = 80;
+const FLOATING_NAV_DEFAULT_BOTTOM = 28;
+const FLOATING_NAV_GAP_ABOVE_FOOTER = 32;
+
+function useStickyBottomAboveFooter() {
+  const [bottom, setBottom] = React.useState(FLOATING_NAV_DEFAULT_BOTTOM);
+  const rafRef = React.useRef<number | null>(null);
+
+  React.useEffect(() => {
+    const update = () => {
+      const footer = document.getElementById("site-footer");
+      if (!footer) {
+        setBottom(FLOATING_NAV_DEFAULT_BOTTOM);
+        return;
+      }
+      const rect = footer.getBoundingClientRect();
+      if (rect.top < window.innerHeight) {
+        setBottom(window.innerHeight - rect.top + FLOATING_NAV_GAP_ABOVE_FOOTER);
+      } else {
+        setBottom(FLOATING_NAV_DEFAULT_BOTTOM);
+      }
+    };
+
+    const onScrollOrResize = () => {
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      rafRef.current = requestAnimationFrame(update);
+    };
+
+    update();
+    window.addEventListener("scroll", onScrollOrResize, { passive: true });
+    window.addEventListener("resize", onScrollOrResize);
+    return () => {
+      window.removeEventListener("scroll", onScrollOrResize);
+      window.removeEventListener("resize", onScrollOrResize);
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
+
+  return bottom;
+}
 
 function FloatingCategoryFilter() {
   const { activeCategory, setActiveCategory, categories } = useCasesSection();
   const reduceMotion = useReducedMotion();
+  const stickyBottom = useStickyBottomAboveFooter();
 
   const filterItems = [{ id: ALL_ID, label: "Todos" }, ...categories.map((c) => ({ id: c.id, label: c.name }))];
 
@@ -27,9 +67,11 @@ function FloatingCategoryFilter() {
     "flex items-center justify-center gap-1.5 rounded-full border border-black/10 bg-white/80 py-2 shadow-[0_14px_50px_rgba(0,0,0,0.14)] backdrop-blur-md overflow-x-auto scrollbar-hide w-fit max-w-[calc(100%-2.5rem)]";
   const innerClass = "flex items-center justify-center gap-1.5 px-8";
 
+  const bottomStyle = { bottom: stickyBottom };
+
   if (reduceMotion) {
     return (
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
+      <div className="fixed left-1/2 -translate-x-1/2 z-50" style={bottomStyle}>
         <div className={containerClass}>
           <div className={innerClass}>
           {filterItems.map((item) => (
@@ -62,8 +104,8 @@ function FloatingCategoryFilter() {
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 20, scale: 0.96 }}
       transition={transition}
-      style={{ x: "-50%" }}
-      className="fixed bottom-4 left-1/2 z-50 origin-center w-fit max-w-[calc(100%-2.5rem)]"
+      style={{ x: "-50%", ...bottomStyle }}
+      className="fixed left-1/2 z-50 origin-center w-fit max-w-[calc(100%-2.5rem)]"
     >
       <div className={containerClass}>
         <div className={innerClass}>
@@ -92,6 +134,7 @@ function FloatingNavbarContent() {
   const reduceMotion = useReducedMotion();
   const [scrolled, setScrolled] = React.useState(false);
   const contactModal = useContactModal();
+  const stickyBottom = useStickyBottomAboveFooter();
 
   React.useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY >= SCROLL_THRESHOLD);
@@ -104,6 +147,7 @@ function FloatingNavbarContent() {
     width: scrolled ? "min(640px, calc(100% - 2.5rem))" : "min(980px, calc(100% - 2.5rem))",
     transition: "width 0.52s cubic-bezier(0.34, 1.56, 0.64, 1)",
   };
+  const bottomStyle = { bottom: stickyBottom };
 
   const navContent = (
     <div className="flex items-center justify-between gap-4 rounded-full border border-black/10 bg-white/80 px-4 py-3 shadow-[0_14px_50px_rgba(0,0,0,0.14)] backdrop-blur-md md:px-5">
@@ -120,13 +164,14 @@ function FloatingNavbarContent() {
           {navItems.map((item) => (
             <li key={item.href}>
               {item.href === "#contato" && contactModal ? (
-                <button
-                  type="button"
-                  onClick={contactModal.openContactModal}
-                  className="rounded-full px-2 py-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                >
-                  {item.label}
-                </button>
+                <ContactPopover>
+                  <button
+                    type="button"
+                    className="rounded-full px-2 py-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  >
+                    {item.label}
+                  </button>
+                </ContactPopover>
               ) : (
                 <a
                   href={item.href}
@@ -150,13 +195,14 @@ function FloatingNavbarContent() {
         </button>
 
         {contactModal ? (
-          <button
-            type="button"
-            onClick={contactModal.openContactModal}
-            className="inline-flex h-9 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          >
-            Falar com a TRESSDE®
-          </button>
+          <ContactPopover>
+            <button
+              type="button"
+              className="inline-flex h-9 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
+              Falar com a TRESSDE®
+            </button>
+          </ContactPopover>
         ) : (
           <a
             href="#contato"
@@ -174,8 +220,8 @@ function FloatingNavbarContent() {
   return reduceMotion ? (
     <div
       key="floating-nav"
-      className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50"
-      style={widthStyle}
+      className="fixed left-1/2 -translate-x-1/2 z-50"
+      style={{ ...widthStyle, ...bottomStyle }}
     >
       {navContent}
     </div>
@@ -186,8 +232,8 @@ function FloatingNavbarContent() {
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 20, scale: 0.96 }}
       transition={transition}
-      style={{ x: "-50%", ...widthStyle }}
-      className="fixed bottom-4 left-1/2 z-50 origin-center"
+      style={{ x: "-50%", ...widthStyle, ...bottomStyle }}
+      className="fixed left-1/2 z-50 origin-center"
     >
       {navContent}
     </motion.div>

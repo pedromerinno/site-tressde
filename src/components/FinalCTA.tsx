@@ -1,6 +1,6 @@
 import * as React from "react";
 import { motion } from "framer-motion";
-import { useContactModal } from "@/contexts/ContactModalContext";
+import { useContactModal, ContactPopover } from "@/contexts/ContactModalContext";
 
 const FinalCTA = () => {
   const contactModal = useContactModal();
@@ -47,13 +47,14 @@ const FinalCTA = () => {
                   className="mt-12 md:mt-14"
                 >
                   {contactModal ? (
-                    <button
-                      type="button"
-                      onClick={contactModal.openContactModal}
-                      className="inline-flex h-12 md:h-14 items-center justify-center rounded-2xl bg-primary px-10 font-display text-base font-semibold text-primary-foreground shadow-sm transition-colors hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                    >
-                      Falar com a TRESSDE®
-                    </button>
+                    <ContactPopover>
+                      <button
+                        type="button"
+                        className="inline-flex h-12 md:h-14 items-center justify-center rounded-2xl bg-primary px-10 font-display text-base font-semibold text-primary-foreground shadow-sm transition-colors hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      >
+                        Falar com a TRESSDE®
+                      </button>
+                    </ContactPopover>
                   ) : (
                     <a
                       href="#contato"

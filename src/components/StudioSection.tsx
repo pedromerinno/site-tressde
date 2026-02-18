@@ -12,16 +12,14 @@ const words = copy.split(/\s+/);
 
 export default function StudioSection() {
   const sectionRef = React.useRef<HTMLElement | null>(null);
-  const labelRef = React.useRef<HTMLParagraphElement | null>(null);
   const textContainerRef = React.useRef<HTMLParagraphElement | null>(null);
   const ctaRef = React.useRef<HTMLAnchorElement | null>(null);
 
   React.useLayoutEffect(() => {
     const section = sectionRef.current;
-    const label = labelRef.current;
     const textEl = textContainerRef.current;
     const cta = ctaRef.current;
-    if (!section || !label || !textEl || !cta) return;
+    if (!section || !textEl || !cta) return;
 
     const wordEls = Array.from(textEl.querySelectorAll<HTMLElement>(".studio-word"));
     if (wordEls.length === 0) return;
@@ -33,7 +31,7 @@ export default function StudioSection() {
 
     const ctx = gsap.context(() => {
       gsap.set(wordEls, { opacity: 0.4 });
-      gsap.set([label, textEl, cta], { autoAlpha: 0, y: 28 });
+      gsap.set([textEl, cta], { autoAlpha: 0, y: 28 });
 
       const tl = gsap.timeline({
         scrollTrigger: {
@@ -43,31 +41,24 @@ export default function StudioSection() {
         },
       });
 
-      tl.to(label, {
-        autoAlpha: 1,
-        y: 0,
-        duration: 0.6,
-        ease: "power2.out",
-      })
-        .to(
+      tl.to(
           textEl,
           {
             autoAlpha: 1,
             y: 0,
-            duration: 0.5,
-            ease: "power2.out",
-          },
-          "-=0.3"
-        )
+          duration: 0.4,
+          ease: "power3.out",
+        }
+      )
         .to(
           cta,
           {
             autoAlpha: 1,
             y: 0,
-            duration: 0.5,
-            ease: "power2.out",
+            duration: 0.3,
+            ease: "power3.out",
           },
-          "-=0.2"
+          "-=0.15"
         );
 
       gsap.fromTo(
@@ -75,14 +66,14 @@ export default function StudioSection() {
         { opacity: 0.4 },
         {
           opacity: 1,
-          duration: 1,
-          stagger: 0.018,
-          ease: "none",
+          duration: 0.5,
+          stagger: 0.03,
+          ease: "power2.in",
           scrollTrigger: {
             trigger: section,
-            start: "top 25%",
-            end: "top 5%",
-            scrub: 1,
+            start: "top 30%",
+            end: "top 10%",
+            scrub: 0.5,
           },
         }
       );
@@ -94,31 +85,32 @@ export default function StudioSection() {
   return (
     <section ref={sectionRef} id="estudio" className="bg-background">
       <div className="px-6 md:px-10 lg:px-16 py-16 md:py-24 lg:py-32">
-        <div className="w-full max-w-[1600px]">
-          <p
-            ref={labelRef}
-            className="text-sm font-medium text-muted-foreground mb-6 md:mb-8"
-          >
-            O estúdio
-          </p>
+        <div className="w-full">
           <p
             ref={textContainerRef}
-            className="font-display text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-semibold tracking-tight text-foreground leading-[1.3] max-w-full"
+            className="font-display text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-semibold tracking-tight text-foreground max-w-full"
+            style={{ lineHeight: '110%' }}
           >
+            <span className="inline-block text-sm font-medium text-muted-foreground tracking-[0.025em] align-top mr-8 md:mr-12 lg:mr-16">The studio</span>
             {words.map((word, i) => (
-              <span key={i} className="studio-word inline">
+              <span
+                key={i}
+                className={`studio-word inline ${i === 0 ? "ml-16 md:ml-24 lg:ml-32" : ""}`}
+              >
                 {word}
                 {i < words.length - 1 ? " " : null}
               </span>
             ))}
+            <span className="inline ml-4 md:ml-6 align-middle opacity-100">
+              <Link
+                ref={ctaRef}
+                to="/#contato"
+                className="inline-flex h-9 md:h-10 px-4 md:px-5 items-center justify-center rounded-full bg-[hsl(var(--primary))] text-[hsl(0,0%,100%)] text-sm font-semibold tracking-[0.01em] opacity-100 transition-colors hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 align-middle"
+              >
+                Learn more
+              </Link>
+            </span>
           </p>
-          <Link
-            ref={ctaRef}
-            to="/#contato"
-            className="mt-8 md:mt-10 inline-flex h-11 px-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          >
-            Saiba mais
-          </Link>
         </div>
       </div>
     </section>

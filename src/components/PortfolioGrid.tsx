@@ -26,7 +26,7 @@ function PortfolioGrid() {
     return (
       <section id="work" className="bg-background relative">
         <div id="work-bottom-sentinel" aria-hidden className="absolute bottom-0 left-0 right-0 h-px pointer-events-none" />
-        <div className="px-6 md:px-10 lg:px-16 pt-4 md:pt-6 lg:pt-8 pb-12 md:pb-16">
+        <div className="px-6 md:px-10 lg:px-16 pt-4 md:pt-6 lg:pt-8 pb-28 md:pb-32 lg:pb-36">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 lg:gap-5">
             {Array.from({ length: 4 }).map((_, i) => (
               <div
@@ -44,7 +44,7 @@ function PortfolioGrid() {
     return (
       <section id="work" className="bg-background relative">
         <div id="work-bottom-sentinel" aria-hidden className="absolute bottom-0 left-0 right-0 h-px pointer-events-none" />
-        <div className="px-6 md:px-10 lg:px-16 py-16 text-center">
+        <div className="px-6 md:px-10 lg:px-16 py-16 pb-28 md:pb-32 text-center">
           <p className="text-muted-foreground">
             Não foi possível carregar os cases no momento.
           </p>
@@ -58,7 +58,7 @@ function PortfolioGrid() {
     return (
       <section id="work" className="bg-background relative min-h-[70vh] flex flex-col justify-center">
         <div id="work-bottom-sentinel" aria-hidden className="absolute bottom-0 left-0 right-0 h-px pointer-events-none" />
-        <div className="px-6 md:px-10 lg:px-16 py-24 text-center">
+        <div className="px-6 md:px-10 lg:px-16 py-24 pb-28 md:pb-32 text-center">
           <p className="text-muted-foreground">
             {isFilteredEmpty
               ? "Nenhum case encontrado para essa categoria."
@@ -72,7 +72,7 @@ function PortfolioGrid() {
   return (
     <section id="work" className="bg-background relative">
       <div id="work-bottom-sentinel" aria-hidden className="absolute bottom-0 left-0 right-0 h-px pointer-events-none" />
-      <div className="px-6 md:px-10 lg:px-16 pt-4 md:pt-6 lg:pt-8 pb-12 md:pb-16 lg:pb-20">
+      <div className="px-6 md:px-10 lg:px-16 pt-4 md:pt-6 lg:pt-8 pb-28 md:pb-32 lg:pb-36">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 lg:gap-5">
           {items.map((item, i) => (
             <CaseCard key={item.id} item={item} index={i} />
@@ -194,22 +194,31 @@ function CaseCard({ item, index }: { item: PublicItem; index: number }) {
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
         </div>
 
-        {/* Top left: título + categoria (somente no hover) */}
-        <div className="absolute left-5 md:left-6 top-5 md:top-6 z-10 text-left opacity-0 transition-opacity duration-300 group-hover/link:opacity-100">
-          <h2 className="font-display text-lg md:text-xl font-semibold text-white leading-tight">
-            {item.title}
-          </h2>
-          <p className="mt-1 text-sm text-white/85">
-            {item.categories[0]?.name ?? "Work"}
-          </p>
+        {/* Overlay no hover: título 2/4, cliente 1/4, categoria 1/4, ícone inferior direito */}
+        <div className="absolute inset-5 md:inset-6 z-10 grid grid-cols-4 gap-x-4 opacity-0 transition-opacity duration-300 group-hover/link:opacity-100">
+          <div className="col-span-2 flex items-start">
+            <h2 className="font-display text-lg md:text-xl font-semibold text-white leading-tight">
+              {item.title}
+            </h2>
+          </div>
+          <div className="col-span-1 flex items-start justify-center">
+            <p className="text-sm text-white/90 truncate max-w-full" title={item.client_name ?? undefined}>
+              {item.client_name ?? "—"}
+            </p>
+          </div>
+          <div className="col-span-1 flex items-start justify-end">
+            <p className="text-sm text-white/75 truncate max-w-full">
+              {item.categories[0]?.name ?? "Work"}
+            </p>
+          </div>
         </div>
 
-        {/* Top right: ícone + (somente no hover) */}
+        {/* Ícone inferior direito — container sem borda */}
         <div
-          className="absolute right-5 md:right-6 top-5 md:top-6 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-white/30 text-white opacity-0 transition-opacity duration-300 group-hover/link:opacity-100 group-hover/link:border-white/50"
+          className="absolute right-5 md:right-6 bottom-5 md:bottom-6 z-10 flex h-10 w-10 items-center justify-center text-white opacity-0 transition-opacity duration-300 group-hover/link:opacity-100"
           aria-hidden
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="h-5 w-5" />
         </div>
       </Link>
     </motion.article>

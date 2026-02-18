@@ -1,17 +1,15 @@
 import * as React from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { motion } from "framer-motion";
+import { Check } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/lib/supabase/client";
 
 type ContactModalContextValue = {
+  /** @deprecated Use ContactPopover instead. Kept for compatibility. */
   openContactModal: () => void;
+  /** @deprecated Use ContactPopover instead. Kept for compatibility. */
   closeContactModal: () => void;
 };
 
@@ -21,7 +19,9 @@ export function useContactModal(): ContactModalContextValue | null {
   return React.useContext(ContactModalContext);
 }
 
-function ContactFormModalContent({ onSuccess }: { onSuccess: () => void }) {
+const overshootTransition = { type: "spring" as const, stiffness: 260, damping: 18 };
+
+function ContactFormContent({ onSuccess, idPrefix }: { onSuccess: () => void; idPrefix: string }) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const onSubmit: React.FormEventHandler<HTMLFormElement> = async (e) => {
@@ -74,14 +74,14 @@ function ContactFormModalContent({ onSuccess }: { onSuccess: () => void }) {
   };
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
+    <form onSubmit={onSubmit} className="space-y-5">
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <label htmlFor="contact-modal-company" className="sr-only">
+          <label htmlFor={`${idPrefix}-company`} className="sr-only">
             Empresa
           </label>
           <Input
-            id="contact-modal-company"
+            id={`${idPrefix}-company`}
             name="company"
             autoComplete="organization"
             placeholder="Nome da empresa"
@@ -90,11 +90,11 @@ function ContactFormModalContent({ onSuccess }: { onSuccess: () => void }) {
           />
         </div>
         <div>
-          <label htmlFor="contact-modal-name" className="sr-only">
+          <label htmlFor={`${idPrefix}-name`} className="sr-only">
             Nome
           </label>
           <Input
-            id="contact-modal-name"
+            id={`${idPrefix}-name`}
             name="name"
             autoComplete="name"
             placeholder="Seu nome"
@@ -104,11 +104,11 @@ function ContactFormModalContent({ onSuccess }: { onSuccess: () => void }) {
         </div>
       </div>
       <div>
-        <label htmlFor="contact-modal-role" className="sr-only">
+        <label htmlFor={`${idPrefix}-role`} className="sr-only">
           Cargo
         </label>
         <Input
-          id="contact-modal-role"
+          id={`${idPrefix}-role`}
           name="role"
           autoComplete="organization-title"
           placeholder="Seu cargo"
@@ -117,11 +117,11 @@ function ContactFormModalContent({ onSuccess }: { onSuccess: () => void }) {
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <label htmlFor="contact-modal-email" className="sr-only">
+          <label htmlFor={`${idPrefix}-email`} className="sr-only">
             E-mail
           </label>
           <Input
-            id="contact-modal-email"
+            id={`${idPrefix}-email`}
             type="email"
             name="email"
             autoComplete="email"
@@ -132,11 +132,11 @@ function ContactFormModalContent({ onSuccess }: { onSuccess: () => void }) {
           />
         </div>
         <div>
-          <label htmlFor="contact-modal-whatsapp" className="sr-only">
+          <label htmlFor={`${idPrefix}-whatsapp`} className="sr-only">
             WhatsApp
           </label>
           <Input
-            id="contact-modal-whatsapp"
+            id={`${idPrefix}-whatsapp`}
             type="tel"
             name="whatsapp"
             autoComplete="tel"
@@ -146,63 +146,108 @@ function ContactFormModalContent({ onSuccess }: { onSuccess: () => void }) {
           />
         </div>
       </div>
-      <div>
-        <label htmlFor="contact-modal-preference" className="sr-only">
-          Preferência de contato
-        </label>
-        <select
-          id="contact-modal-preference"
-          name="contactPreference"
-          defaultValue="email"
-          className="h-11 w-full rounded-xl bg-muted/50 border border-border px-4 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-        >
-          <option value="email">E-mail</option>
-          <option value="whatsapp">WhatsApp</option>
-        </select>
-      </div>
-      <div className="pt-2">
+      <fieldset className="space-y-3">
+        <legend className="block text-sm font-medium text-foreground">
+          Preferência de canal
+        </legend>
+        <div className="grid grid-cols-2 gap-3">
+          <label
+            htmlFor={`${idPrefix}-preference-email`}
+            className="group relative flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-border bg-muted/30 py-3.5 px-4 text-sm font-medium text-foreground transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/10 has-[:checked]:text-primary focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background"
+          >
+            <input
+              type="radio"
+              id={`${idPrefix}-preference-email`}
+              name="contactPreference"
+              value="email"
+              defaultChecked
+              className="sr-only"
+            />
+            <span>E-mail</span>
+            <Check className="h-4 w-4 shrink-0 opacity-0 group-has-[:checked]:opacity-100" aria-hidden />
+          </label>
+          <label
+            htmlFor={`${idPrefix}-preference-whatsapp`}
+            className="group relative flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-border bg-muted/30 py-3.5 px-4 text-sm font-medium text-foreground transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/10 has-[:checked]:text-primary focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background"
+          >
+            <input
+              type="radio"
+              id={`${idPrefix}-preference-whatsapp`}
+              name="contactPreference"
+              value="whatsapp"
+              className="sr-only"
+            />
+            <span>WhatsApp</span>
+            <Check className="h-4 w-4 shrink-0 opacity-0 group-has-[:checked]:opacity-100" aria-hidden />
+          </label>
+        </div>
+      </fieldset>
+      <div className="pt-3 flex flex-col items-center">
         <button
           type="submit"
           disabled={isSubmitting}
-          className="h-11 w-full rounded-xl bg-primary px-6 font-display text-sm font-semibold text-primary-foreground transition-colors hover:brightness-110 disabled:opacity-60"
+          className="h-12 min-w-[12rem] w-fit rounded-2xl border-0 bg-primary px-8 font-display text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:brightness-110 disabled:opacity-60"
         >
           {isSubmitting ? "Enviando..." : "Agendar uma conversa"}
         </button>
       </div>
-      <p className="text-center text-xs text-muted-foreground">
+      <p className="text-center text-xs text-muted-foreground pt-1">
         Resposta em até 1 dia útil. Sem spam.
       </p>
     </form>
   );
 }
 
-export function ContactModalProvider({ children }: { children: React.ReactNode }) {
-  const [open, setOpen] = React.useState(false);
+export type ContactPopoverProps = {
+  children: React.ReactNode;
+};
 
-  const openContactModal = React.useCallback(() => setOpen(true), []);
-  const closeContactModal = React.useCallback(() => setOpen(false), []);
+/**
+ * Dropdown "Falar com a TRESSDE®" que abre acima do botão com animação overshoot.
+ * Deve ser usado dentro de ContactModalProvider.
+ */
+export function ContactPopover({ children }: ContactPopoverProps) {
+  const [open, setOpen] = React.useState(false);
+  const idPrefix = React.useId().replace(/:/g, "-");
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>{children}</PopoverTrigger>
+      <PopoverContent
+        side="top"
+        sideOffset={12}
+        align="center"
+        className="w-[min(calc(100vw-2rem),30rem)] max-w-md rounded-2xl border-border/80 p-8 sm:p-10 shadow-xl data-[state=open]:animate-none data-[state=closed]:animate-none"
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={overshootTransition}
+          className="space-y-6"
+        >
+          <div className="space-y-2">
+            <h2 className="text-xl font-display font-semibold tracking-tight text-foreground">
+              Falar com a TRESSDE®
+            </h2>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Converse com a TRESSDE e tenha um plano completo para comunicar, lançar e evoluir com consistência.
+            </p>
+          </div>
+          <ContactFormContent idPrefix={idPrefix} onSuccess={() => setOpen(false)} />
+        </motion.div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+export function ContactModalProvider({ children }: { children: React.ReactNode }) {
+  const openContactModal = React.useCallback(() => {}, []);
+  const closeContactModal = React.useCallback(() => {}, []);
 
   const value = React.useMemo(
     () => ({ openContactModal, closeContactModal }),
     [openContactModal, closeContactModal],
   );
 
-  return (
-    <ContactModalContext.Provider value={value}>
-      {children}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md rounded-2xl border-border/80 p-6 shadow-xl sm:p-8">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-display font-semibold tracking-tight">
-              Falar com a TRESSDE®
-            </DialogTitle>
-            <DialogDescription>
-              Converse com a TRESSDE e tenha um plano completo para comunicar, lançar e evoluir com consistência.
-            </DialogDescription>
-          </DialogHeader>
-          <ContactFormModalContent onSuccess={closeContactModal} />
-        </DialogContent>
-      </Dialog>
-    </ContactModalContext.Provider>
-  );
+  return <ContactModalContext.Provider value={value}>{children}</ContactModalContext.Provider>;
 }
