@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase/client";
-import { getPrimaryCompany } from "@/lib/onmx/company";
+import { getPrimaryCompany } from "@/lib/core/company";
 import type { CaseBlock, DraftBlock } from "./types";
 
 // ── Shared helpers (moved from AdminCases) ──────────────────────────

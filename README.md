@@ -35,13 +35,13 @@ npm run preview
 
 1. **Repositório**  
    O projeto Vercel deve estar ligado a: **https://github.com/pedromerinno/site-tressde**  
-   Se ainda estiver em outro repo (ex.: site-onmx), em [Vercel Dashboard](https://vercel.com/dashboard) → projeto → **Settings** → **Git** → altere o repositório para `pedromerinno/site-tressde`, ou crie um **novo projeto** importando esse repo.
+   Em [Vercel Dashboard](https://vercel.com/dashboard) → projeto → **Settings** → **Git** → confirme que o repositório é `pedromerinno/site-tressde`, ou crie um **novo projeto** importando esse repo.
 
 2. **Variáveis de ambiente**  
    Em **Settings** → **Environment Variables** defina para Production (e Preview se quiser):
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
-   - (opcional) `VITE_IMAGEKIT_URL_ENDPOINT`, `VITE_PRIMARY_COMPANY_SLUG`, `VITE_ONMX_WHATSAPP_NUMBER`, `VITE_ONMX_WHATSAPP_TEXT`
+   - (opcional) `VITE_IMAGEKIT_URL_ENDPOINT`
 
 3. **Redeploy**  
    Após mudar repo ou env vars: **Deployments** → ⋮ no último deploy → **Redeploy**.

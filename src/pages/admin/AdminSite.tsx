@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { UploadCloud, Globe, Users } from "lucide-react";
 
 import { supabase } from "@/lib/supabase/client";
-import { getPrimaryCompany } from "@/lib/onmx/company";
+import { getPrimaryCompany } from "@/lib/core/company";
 import type { SiteMeta } from "@/lib/site-meta";
 import {
   getPublicCases,

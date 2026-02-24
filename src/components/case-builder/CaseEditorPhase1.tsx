@@ -4,8 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { ImageIcon, Plus } from "lucide-react";
 
 import { supabase } from "@/lib/supabase/client";
-import { getPrimaryCompany } from "@/lib/onmx/company";
-import { toSlug } from "@/lib/onmx/slug";
+import { getPrimaryCompany } from "@/lib/core/company";
+import { toSlug } from "@/lib/core/slug";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";

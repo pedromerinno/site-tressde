@@ -4,7 +4,7 @@ import { Link, useParams } from "react-router-dom";
 import { ChevronLeft, Plus } from "lucide-react";
 
 import { supabase } from "@/lib/supabase/client";
-import { getPrimaryCompany } from "@/lib/onmx/company";
+import { getPrimaryCompany } from "@/lib/core/company";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 import { Button } from "@/components/ui/button";
 import Footer from "@/components/Footer";
@@ -12,7 +12,7 @@ import { ContactModalProvider, useContactModal, ContactPopover } from "@/context
 import { getPublicCaseBlocks } from "@/lib/case-builder/queries";
 import type { VideoContent } from "@/lib/case-builder/types";
 import { normalizeContainerContent } from "@/lib/case-builder/types";
-import PublicContainerBlock from "@/components/case-blocks-public/PublicContainerBlock";
+import CaseBlocksRenderer from "@/components/case-blocks-public/CaseBlocksRenderer";
 import PublicVideoBlock from "@/components/case-blocks-public/PublicVideoBlock";
 import { useTranslation } from "@/i18n";
 
@@ -33,6 +33,9 @@ type CaseDetail = {
   services: string[] | null;
   client_name: string | null;
   categories: CaseCategory[];
+  container_padding: number;
+  container_radius: number;
+  container_gap: number;
 };
 
 type CaseMediaItem = {
@@ -92,7 +95,7 @@ async function getCaseBySlug(slug: string): Promise<CaseDetail> {
   const { data, error } = await supabase
     .from("cases")
     .select(
-      "id,title,slug,summary,year,cover_image_url,page_background,services,status,published_at,clients(name),case_category_cases(case_categories(id,name,slug))",
+      "id,title,slug,summary,year,cover_image_url,page_background,services,status,published_at,container_padding,container_radius,container_gap,clients(name),case_category_cases(case_categories(id,name,slug))",
     )
     .eq("slug", slug)
     .eq("status", "published")
@@ -113,6 +116,9 @@ async function getCaseBySlug(slug: string): Promise<CaseDetail> {
     cover_image_url: string | null;
     page_background: string | null;
     services: string[] | null;
+    container_padding: number | null;
+    container_radius: number | null;
+    container_gap: number | null;
     clients: { name: string } | null;
     case_category_cases: Array<{ case_categories: CaseCategory | null }> | null;
   };
@@ -131,6 +137,9 @@ async function getCaseBySlug(slug: string): Promise<CaseDetail> {
       row.case_category_cases
         ?.map((cc) => cc.case_categories)
         .filter(Boolean) as CaseCategory[] | undefined ?? [],
+    container_padding: row.container_padding ?? 0,
+    container_radius: row.container_radius ?? 0,
+    container_gap: row.container_gap ?? 0,
   };
 }
 
@@ -438,19 +447,17 @@ function CasePageContent() {
             </div>
           ) : (
             hasContainerLayout ? (
-              <div className="flex flex-col gap-0 [&>*]:mb-0 [&>*]:mt-0 [&>*+*]:-mt-1 [&_img]:block [&_video]:block [&_mux-player]:block">
-                {(blocksQuery.data ?? [])
-                  .filter((b) => b.type === "container")
-                  .map((block) => (
-                    <PublicContainerBlock
-                      key={block.id}
-                      content={normalizeContainerContent(block.content as any)}
-                      noSpacing
-                    />
-                  ))}
-              </div>
+              <CaseBlocksRenderer
+                blocks={blocksQuery.data ?? []}
+                className="[&_img]:block [&_video]:block [&_mux-player]:block"
+                layout={{
+                  containerPadding: caseQuery.data.container_padding,
+                  containerRadius: caseQuery.data.container_radius,
+                  containerGap: caseQuery.data.container_gap,
+                }}
+              />
             ) : (
-              <div className="flex flex-col gap-0 [&>*]:mb-0 [&>*]:mt-0 [&>*+*]:-mt-1 [&_img]:block [&_video]:block [&_mux-player]:block">
+              <div className="space-y-4 [&_img]:block [&_video]:block [&_mux-player]:block">
                 {fallbackMedia.map((item) =>
                   "url" in item ? (
                     <OptimizedImage
@@ -463,8 +470,8 @@ function CasePageContent() {
                       className="w-full h-auto"
                     />
                   ) : (
-                    <div key={item.id} className="[&:not(:last-child)]:mb-0">
-                      <PublicVideoBlock content={item.content} noSpacing />
+                    <div key={item.id}>
+                      <PublicVideoBlock content={item.content} />
                     </div>
                   ),
                 )}

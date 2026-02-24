@@ -7,7 +7,7 @@ type ClientLogo = {
 import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/client";
-import { getPrimaryCompany } from "@/lib/onmx/company";
+import { getPrimaryCompany } from "@/lib/core/company";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 
 const fallbackClients: ClientLogo[] = [

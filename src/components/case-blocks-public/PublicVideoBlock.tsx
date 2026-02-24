@@ -3,6 +3,7 @@ import MuxPlayer from "@mux/mux-player-react";
 import type { VideoContent } from "@/lib/case-builder/types";
 import { Play } from "lucide-react";
 import { cn } from "@/lib/utils";
+import VideoPlayer from "@/components/ui/VideoPlayer";
 
 const ASPECT_MAP: Record<string, string> = {
   "16/9": "aspect-video",
@@ -101,11 +102,11 @@ function VideoFrame({
       }}
     >
       <div
-        className={cn("onmx-media-width", needsCenter ? "mx-auto" : "")}
+        className={cn("tsd-media-width", needsCenter ? "mx-auto" : "")}
         style={
           {
-            ["--onmx-media-w-mobile" as any]: widthMobilePct,
-            ["--onmx-media-w-desktop" as any]: widthDesktopPct,
+            ["--tsd-media-w-mobile" as any]: widthMobilePct,
+            ["--tsd-media-w-desktop" as any]: widthDesktopPct,
           } as React.CSSProperties
         }
       >
@@ -222,16 +223,23 @@ export default function PublicVideoBlock({ content, noSpacing }: Props) {
   }
 
   if (isMuxRender) {
-    const blurThumbnail = getMuxBlurThumbnail(content.muxPlaybackId!);
+    // Custom controls: use VideoPlayer overlay instead of native MuxPlayer UI
+    if (controls) {
+      return (
+        <VideoFrame content={content} noSpacing={noSpacing}>
+          <VideoPlayer
+            muxPlaybackId={content.muxPlaybackId!}
+            autoPlay={autoPlay}
+            muted={autoPlay}
+            loop={loop}
+            className={cn("w-full", aspect)}
+          />
+        </VideoFrame>
+      );
+    }
 
-    const muxStyle = controls
-      ? undefined
-      : ({
-          ["--controls" as any]: "none",
-          ["--center-controls" as any]: "none",
-          ["--top-controls" as any]: "none",
-          ["--bottom-controls" as any]: "none",
-        } as React.CSSProperties);
+    // No controls: hide everything, cover mode
+    const blurThumbnail = getMuxBlurThumbnail(content.muxPlaybackId!);
 
     return (
       <VideoFrame content={content} noSpacing={noSpacing}>
@@ -249,17 +257,22 @@ export default function PublicVideoBlock({ content, noSpacing }: Props) {
               className="absolute inset-0 w-full h-full object-cover scale-150 blur-2xl"
             />
           </div>
-          <div className={cn("absolute inset-0", controls ? "" : "mux-no-controls")}>
+          <div className="absolute inset-0 mux-no-controls">
             <MuxPlayer
               ref={muxRef}
               playbackId={content.muxPlaybackId!}
               streamType="on-demand"
               preload="metadata"
               className="absolute inset-0 w-full h-full"
-              style={muxStyle}
-              controls={controls}
+              style={{
+                ["--controls" as any]: "none",
+                ["--center-controls" as any]: "none",
+                ["--top-controls" as any]: "none",
+                ["--bottom-controls" as any]: "none",
+              } as React.CSSProperties}
+              controls={false}
               autoPlay={autoPlay ? "muted" : undefined}
-              muted={autoPlay || !controls}
+              muted
               playsInline
               loop={loop}
             />
@@ -270,14 +283,30 @@ export default function PublicVideoBlock({ content, noSpacing }: Props) {
   }
 
   if (isFileRender) {
+    // Custom controls: use VideoPlayer overlay instead of native <video> controls
+    if (controls) {
+      return (
+        <VideoFrame content={content} noSpacing={noSpacing}>
+          <VideoPlayer
+            src={content.url}
+            autoPlay={autoPlay}
+            muted={autoPlay}
+            loop={loop}
+            className={cn("w-full", aspect)}
+          />
+        </VideoFrame>
+      );
+    }
+
+    // No controls: native video, muted
     return (
       <VideoFrame content={content} noSpacing={noSpacing}>
         <video
           ref={fileRef}
           src={content.url}
-          controls={controls}
+          controls={false}
           autoPlay={autoPlay}
-          muted={autoPlay || !controls}
+          muted
           playsInline
           loop={loop}
           preload="metadata"

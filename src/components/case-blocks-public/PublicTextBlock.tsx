@@ -80,8 +80,8 @@ export default function PublicTextBlock({ content, noSpacing }: Props) {
           paddingRight: padding.right,
           color: preset === "title_1" ? (titleColor ?? baseColor) : baseColor,
           // CSS vars for rich typography overrides.
-          ["--onmx-title-color" as any]: titleColor ?? baseColor ?? "",
-          ["--onmx-link-color" as any]: linkColor ?? "",
+          ["--tsd-title-color" as any]: titleColor ?? baseColor ?? "",
+          ["--tsd-link-color" as any]: linkColor ?? "",
         }}
       >
         {hasRich ? (
@@ -90,8 +90,8 @@ export default function PublicTextBlock({ content, noSpacing }: Props) {
               "prose prose-neutral max-w-none",
               "prose-p:my-0 prose-headings:my-0 prose-ul:my-0 prose-ol:my-0 prose-li:my-0",
               "prose-a:no-underline hover:prose-a:underline",
-              "prose-headings:text-[color:var(--onmx-title-color)]",
-              linkColor ? "prose-a:text-[color:var(--onmx-link-color)]" : "prose-a:text-primary",
+              "prose-headings:text-[color:var(--tsd-title-color)]",
+              linkColor ? "prose-a:text-[color:var(--tsd-link-color)]" : "prose-a:text-primary",
             )}
             dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(content.html ?? "") }}
           />

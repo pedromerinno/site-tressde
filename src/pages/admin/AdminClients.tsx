@@ -3,9 +3,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 
 import { supabase } from "@/lib/supabase/client";
-import { getPrimaryCompany } from "@/lib/onmx/company";
-import { toSlug } from "@/lib/onmx/slug";
-import { sanitizeSvgToCurrentColor } from "@/lib/onmx/svg";
+import { getPrimaryCompany } from "@/lib/core/company";
+import { toSlug } from "@/lib/core/slug";
+import { sanitizeSvgToCurrentColor } from "@/lib/core/svg";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";

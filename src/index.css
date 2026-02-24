@@ -146,13 +146,13 @@
   }
 
   /* Responsive % width for media blocks (image/video). */
-  .onmx-media-width {
-    width: calc(var(--onmx-media-w-mobile, 100) * 1%);
+  .tsd-media-width {
+    width: calc(var(--tsd-media-w-mobile, 100) * 1%);
   }
 
   @media (min-width: 768px) {
-    .onmx-media-width {
-      width: calc(var(--onmx-media-w-desktop, 100) * 1%);
+    .tsd-media-width {
+      width: calc(var(--tsd-media-w-desktop, 100) * 1%);
     }
   }
 
@@ -188,6 +188,22 @@
 
   /* Extra safety: hide only the gesture overlay (keeps media layer intact) */
   .mux-no-controls mux-player::part(gesture-layer) {
+    display: none !important;
+  }
+
+  /* Mux Player: hide native UI for custom VideoPlayer controls (no cover/position overrides) */
+  .mux-hidden-ui mux-player {
+    --controls: none !important;
+    --top-controls: none !important;
+    --center-controls: none !important;
+    --bottom-controls: none !important;
+    cursor: pointer !important;
+  }
+
+  .mux-hidden-ui mux-player::part(top),
+  .mux-hidden-ui mux-player::part(center),
+  .mux-hidden-ui mux-player::part(bottom),
+  .mux-hidden-ui mux-player::part(gesture-layer) {
     display: none !important;
   }
 }

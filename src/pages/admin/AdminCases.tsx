@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase/client";
 import { getCases, getClients } from "@/lib/case-builder/queries";
-import { getPrimaryCompany } from "@/lib/onmx/company";
-import { toSlug } from "@/lib/onmx/slug";
+import { getPrimaryCompany } from "@/lib/core/company";
+import { toSlug } from "@/lib/core/slug";
 import {
   Dialog,
   DialogContent,

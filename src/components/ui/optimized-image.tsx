@@ -5,7 +5,7 @@ import {
   IMAGE_PRESETS,
   type ImagePreset,
   type ImageTransformOptions,
-} from "@/lib/onmx/image";
+} from "@/lib/core/image";
 
 type OptimizedImageProps = Omit<
   React.ImgHTMLAttributes<HTMLImageElement>,

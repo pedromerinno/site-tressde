@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase/client";
-import { getPrimaryCompany } from "@/lib/onmx/company";
+import { getPrimaryCompany } from "@/lib/core/company";
 
 export type SiteMeta = {
   site_name: string | null;

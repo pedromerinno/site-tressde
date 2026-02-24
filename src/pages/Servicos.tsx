@@ -188,7 +188,7 @@ function ServicosHero() {
           </div>
         ) : queriesSettled ? (
           <OptimizedImage
-            src="/BG_onmx_02.jpg"
+            src="/BG_tressde_hero.jpg"
             alt=""
             preset="hero"
             priority
@@ -814,10 +814,10 @@ function ProcessSection() {
           </p>
         </div>
 
-        {/* 5 círculos — full width */}
+        {/* 5 círculos — padding lateral para não cortar o primeiro e o último */}
         <div
           ref={diagramRef}
-          className="mt-16 w-full flex flex-nowrap justify-center items-center overflow-x-auto overflow-y-visible py-8 scrollbar-hide min-h-[220px] sm:min-h-[260px] md:min-h-[300px] lg:min-h-[340px]"
+          className="mt-16 w-full max-w-none flex flex-nowrap justify-center items-center overflow-x-auto overflow-y-visible py-8 px-6 md:px-10 lg:px-16 scrollbar-hide min-h-[220px] sm:min-h-[260px] md:min-h-[300px] lg:min-h-[340px]"
           role="img"
           aria-label={processSteps.join(", ")}
         >

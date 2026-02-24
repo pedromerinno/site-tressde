@@ -41,6 +41,7 @@ type Props = {
 export default function PublicContainerBlock({ content, noSpacing, interactive }: Props) {
   const c = normalizeContainerContent(content);
   const bgColor = c.backgroundColor?.trim?.() || undefined;
+
   return (
     <div
       className="grid gap-0"
