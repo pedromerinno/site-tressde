@@ -452,7 +452,7 @@ export async function getPublicCases(): Promise<PublicCaseItem[]> {
     .eq("status", "published")
     .eq("owner_company_id", company.id)
     .not("published_at", "is", null)
-    .order("published_at", { ascending: false })
+    .order("sort_order", { ascending: true, nullsFirst: false })
     .limit(24);
 
   if (error) throw error;

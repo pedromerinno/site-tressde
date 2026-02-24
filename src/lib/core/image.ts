@@ -1,96 +1,87 @@
-const IMAGEKIT_ENDPOINT = import.meta.env.VITE_IMAGEKIT_URL_ENDPOINT as
-  | string
-  | undefined;
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 
 export type ImageTransformOptions = {
-  w?: number;
-  h?: number;
-  q?: number;
-  f?: "auto" | "avif" | "webp" | "jpg" | "png";
-  fo?: "center" | "top" | "bottom" | "left" | "right" | "auto";
+  width?: number;
+  height?: number;
+  quality?: number;
+  format?: "origin" | "avif" | "webp";
+  resize?: "cover" | "contain" | "fill";
 };
 
 export const IMAGE_PRESETS = {
-  hero: { w: 1920, q: 78, f: "auto", fo: "center" } as const,
-  card: { w: 800, q: 80, f: "auto", fo: "center" } as const,
-  thumb: { w: 300, q: 80, f: "auto" } as const,
-  logo: { w: 280, q: 85, f: "auto" } as const,
-  lightbox: { q: 82, f: "auto" } as const,
-  gallery: { w: 600, q: 80, f: "auto" } as const,
+  hero: { width: 1920, quality: 78 } as const,
+  card: { width: 800, quality: 80 } as const,
+  thumb: { width: 300, quality: 80 } as const,
+  logo: { width: 280, quality: 85 } as const,
+  lightbox: { quality: 82 } as const,
+  gallery: { width: 600, quality: 80 } as const,
 } satisfies Record<string, ImageTransformOptions>;
 
 export type ImagePreset = keyof typeof IMAGE_PRESETS;
-
-function buildTransformString(opts: ImageTransformOptions): string {
-  const parts: string[] = [];
-  if (opts.w) parts.push(`w-${opts.w}`);
-  if (opts.h) parts.push(`h-${opts.h}`);
-  if (opts.q) parts.push(`q-${opts.q}`);
-  if (opts.f) parts.push(`f-${opts.f}`);
-  if (opts.fo) parts.push(`fo-${opts.fo}`);
-  return parts.join(",");
-}
 
 function isAbsoluteUrl(src: string): boolean {
   return src.startsWith("http://") || src.startsWith("https://");
 }
 
-function supabasePublicUrlToFolderPath(src: string): string | null {
-  // If your ImageKit origin is configured as a "Web Folder" pointing to:
-  //   https://<project>.supabase.co/storage/v1/object/public/
-  // then the folder path should be:
-  //   <bucket>/<path>
-  //
-  // Example:
-  //   src: https://<project>.supabase.co/storage/v1/object/public/case-covers/covers/a.jpg
-  //   ->   case-covers/covers/a.jpg
-  try {
-    const u = new URL(src);
-    const marker = "/storage/v1/object/public/";
-    const idx = u.pathname.indexOf(marker);
-    if (idx === -1) return null;
-    const rest = u.pathname.slice(idx + marker.length).replace(/^\/+/, "");
-    return rest.length > 0 ? rest : null;
-  } catch {
-    return null;
-  }
-}
-
-export function getImageKitUrl(
+/**
+ * Build a Supabase Image Transformation URL.
+ *
+ * For Supabase storage URLs: replaces `/object/` with `/render/image/`
+ * and appends transform query params (width, height, quality, resize, format).
+ *
+ * Non-Supabase URLs and Mux thumbnails are returned unchanged.
+ */
+export function getOptimizedUrl(
   src: string,
   options: ImageTransformOptions = {},
 ): string {
-  // Only proxy absolute URLs through ImageKit (web proxy / fetch).
-  // Relative paths (local assets) should remain untouched.
-  // Mux already serves optimised thumbnails — skip ImageKit to avoid 400s
-  // from query-param conflicts in the web proxy.
-  if (!IMAGEKIT_ENDPOINT || !isAbsoluteUrl(src)) return src;
+  if (!SUPABASE_URL || !isAbsoluteUrl(src)) return src;
   if (src.includes("image.mux.com/")) return src;
 
-  const tr = buildTransformString(options);
-  const base = IMAGEKIT_ENDPOINT.replace(/\/$/, "");
+  // Only transform Supabase storage URLs from our project
+  const base = SUPABASE_URL.replace(/\/$/, "");
+  if (!src.startsWith(base)) return src;
 
-  // Prefer "Web Folder" style for Supabase public URLs, because
-  // some setups/accounts return 404 with absolute URL web-proxy fetch.
-  const folderPath = supabasePublicUrlToFolderPath(src);
-  if (folderPath) return tr ? `${base}/tr:${tr}/${folderPath}` : `${base}/${folderPath}`;
+  // Replace /object/ with /render/image/ for transformation endpoint
+  const objectMarker = "/storage/v1/object/";
+  const renderMarker = "/storage/v1/render/image/";
 
-  // Fallback to absolute URL fetch (web proxy).
-  return tr ? `${base}/tr:${tr}/${src}` : `${base}/${src}`;
+  if (!src.includes(objectMarker)) return src;
+
+  let transformed = src.replace(objectMarker, renderMarker);
+
+  // Build query params
+  const params = new URLSearchParams();
+  if (options.width) params.set("width", String(options.width));
+  if (options.height) params.set("height", String(options.height));
+  if (options.quality) params.set("quality", String(options.quality));
+  if (options.format) params.set("format", options.format);
+
+  // Supabase default resize is "cover" which crops when only width is given.
+  // Use "contain" to scale proportionally and let CSS object-fit handle framing.
+  const resize = options.resize ?? (options.width && !options.height ? "contain" : undefined);
+  if (resize) params.set("resize", resize);
+
+  const qs = params.toString();
+  if (qs) transformed += (transformed.includes("?") ? "&" : "?") + qs;
+
+  return transformed;
 }
+
+/** @deprecated Use getOptimizedUrl instead */
+export const getImageKitUrl = getOptimizedUrl;
 
 export function getResponsiveSrcset(
   src: string,
   options: ImageTransformOptions = {},
   widths: number[] = [],
 ): string {
-  if (!IMAGEKIT_ENDPOINT || !isAbsoluteUrl(src) || widths.length === 0)
-    return "";
+  if (!SUPABASE_URL || !isAbsoluteUrl(src) || widths.length === 0) return "";
   if (src.includes("image.mux.com/")) return "";
 
   return widths
     .map((w) => {
-      const url = getImageKitUrl(src, { ...options, w });
+      const url = getOptimizedUrl(src, { ...options, width: w });
       return `${url} ${w}w`;
     })
     .join(", ");
