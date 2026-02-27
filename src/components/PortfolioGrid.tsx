@@ -6,6 +6,7 @@ import { Plus } from "lucide-react";
 import MuxPlayer from "@mux/mux-player-react";
 import { getPublicCases, toPublicObjectUrl } from "@/lib/case-builder/queries";
 import { OptimizedImage } from "@/components/ui/optimized-image";
+import { BlurhashCanvas } from "@/components/ui/blurhash-canvas";
 import { useCasesSection, ALL_ID } from "@/contexts/CasesSectionContext";
 import { useTranslation } from "@/i18n";
 
@@ -96,6 +97,7 @@ function CaseCard({ item, index }: { item: PublicItem; index: number }) {
   const muxRef = React.useRef<any>(null);
   const videoRef = React.useRef<HTMLVideoElement | null>(null);
   const [hovered, setHovered] = React.useState(false);
+  const [posterLoaded, setPosterLoaded] = React.useState(false);
 
   const hasVideo = Boolean(item.cover_mux_playback_id || item.cover_video_url);
 
@@ -147,6 +149,16 @@ function CaseCard({ item, index }: { item: PublicItem; index: number }) {
       >
         {/* Capa */}
         <div className="absolute inset-0">
+          {/* Blurhash placeholder */}
+          {item.cover_blurhash && (
+            <BlurhashCanvas
+              hash={item.cover_blurhash}
+              hidden={posterLoaded}
+              className="absolute inset-0 h-full w-full object-cover"
+              style={{ pointerEvents: "none" }}
+            />
+          )}
+
           {/* Poster (always rendered as base layer) */}
           {posterUrl ? (
             <OptimizedImage
@@ -156,6 +168,7 @@ function CaseCard({ item, index }: { item: PublicItem; index: number }) {
               widths={[800, 1000, 1200, 1600, 2000]}
               sizes="(min-width: 768px) 50vw, 100vw"
               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+              onLoad={() => setPosterLoaded(true)}
             />
           ) : (
             <div className="absolute inset-0 bg-gradient-to-br from-primary/80 to-primary/40" />

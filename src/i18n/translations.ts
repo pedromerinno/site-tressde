@@ -7,6 +7,7 @@ export type TranslationKey = keyof typeof pt;
 const pt = {
   // Nav & hero
   navHome: "Início",
+  navServicos: "Serviços",
   navWork: "Work",
   navContact: "Contato",
   heroTagline: "imagine studio.",
@@ -176,6 +177,7 @@ const pt = {
 const enMap: Record<TranslationKey, string> = {
   ...pt,
   navHome: "Home",
+  navServicos: "Services",
   navWork: "Work",
   navContact: "Contact",
   heroTagline: "imagine studio.",
@@ -327,6 +329,7 @@ const enMap: Record<TranslationKey, string> = {
 const esMap: Record<TranslationKey, string> = {
   ...pt,
   navHome: "Inicio",
+  navServicos: "Servicios",
   navWork: "Work",
   navContact: "Contacto",
   heroTagline: "imagine studio.",

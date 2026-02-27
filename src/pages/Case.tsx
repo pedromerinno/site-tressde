@@ -14,6 +14,7 @@ import type { VideoContent } from "@/lib/case-builder/types";
 import { normalizeContainerContent } from "@/lib/case-builder/types";
 import CaseBlocksRenderer from "@/components/case-blocks-public/CaseBlocksRenderer";
 import PublicVideoBlock from "@/components/case-blocks-public/PublicVideoBlock";
+import CasePageSkeleton from "@/components/CasePageSkeleton";
 import { useTranslation } from "@/i18n";
 
 type CaseCategory = {
@@ -291,6 +292,11 @@ function CasePageContent() {
   const hasContainerLayout = containerGrids.length > 0;
   const hasAnyMedia = hasContainerLayout || fallbackMedia.length > 0;
 
+  // Skeleton até case + blocos + mídia carregarem, para o footer não subir
+  const isContentLoading =
+    caseQuery.isLoading ||
+    (!!caseQuery.data?.id && (blocksQuery.isLoading || mediaQuery.isLoading));
+
   React.useEffect(() => {
     if (!infoOpen) return;
 
@@ -431,12 +437,8 @@ function CasePageContent() {
         </div>
 
         <div className="relative w-full pb-28">
-          {caseQuery.isLoading ? (
-            <div className="space-y-0">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-64 md:h-80 bg-muted animate-pulse" />
-              ))}
-            </div>
+          {isContentLoading ? (
+            <CasePageSkeleton />
           ) : caseQuery.isError || !caseQuery.data ? (
             <div className="border border-border bg-card p-8 text-sm text-muted-foreground">
               {t("caseNotFound")}

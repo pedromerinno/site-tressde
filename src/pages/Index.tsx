@@ -10,11 +10,13 @@ const Index = () => {
   return (
     <ContactModalProvider>
       <CasesSectionProvider>
-        <main className="bg-background text-foreground min-h-screen">
+        <main className="bg-background text-foreground min-h-screen flex flex-col">
           <FloatingNavbar />
-          <StudioMediaReveal />
-          <StudioSection />
-          <PortfolioGrid />
+          <div className="flex-1 flex flex-col min-h-0">
+            <StudioMediaReveal />
+            <StudioSection />
+            <PortfolioGrid />
+          </div>
           <Footer />
         </main>
       </CasesSectionProvider>

@@ -10,6 +10,7 @@ function useNavItems(): { label: string; href: string }[] {
   const { t } = useTranslation();
   return [
     { label: t("navHome"), href: "/" },
+    { label: t("navServicos"), href: "/servicos" },
     { label: t("navWork"), href: "/#work" },
   ];
 }

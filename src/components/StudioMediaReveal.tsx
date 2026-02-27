@@ -10,6 +10,7 @@ import {
   type StudioRevealDisplayItem,
 } from "@/lib/case-builder/queries";
 import { OptimizedImage } from "@/components/ui/optimized-image";
+import { BlurhashCanvas } from "@/components/ui/blurhash-canvas";
 import PortfolioHero from "@/components/PortfolioHero";
 import { useTranslation } from "@/i18n";
 
@@ -144,43 +145,9 @@ export default function StudioMediaReveal() {
     return () => mm.revert();
   }, [displayItems, featured?.id]);
 
-  if (displayLoading) {
-    return (
-      <section className="relative bg-background" style={{ height: `${SCROLL_VH}vh` }}>
-        <div className="sticky top-0 flex h-screen w-full flex-col overflow-hidden">
-          {/* Header */}
-          <div className="relative z-40 shrink-0">
-            <PortfolioHero />
-          </div>
-
-          {/* Spacer */}
-          <div className="min-h-0 flex-1 max-h-[28vh]" aria-hidden />
-
-          {/* Cards skeleton */}
-          <div className="flex shrink-0 items-center justify-center px-2 pb-8 md:px-4 pt-2">
-            <div className="w-full max-w-[min(98vw,2200px)]">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-3">
-                {[0, 1, 2].map((i) => (
-                  <div key={i} className="flex flex-col items-start gap-2">
-                    <div className="aspect-square w-full rounded-xl bg-muted animate-pulse" />
-                    <div
-                      className="h-4 rounded-md bg-muted/60 animate-pulse"
-                      style={{ width: [72, 96, 56][i] }}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  if (!displayItems) {
-    return (
-      <StudioRevealEmptyMessage />
-    );
+  // After loading, if no display items configured, show empty message
+  if (!displayLoading && !displayItems) {
+    return <StudioRevealEmptyMessage />;
   }
 
   return (
@@ -200,20 +167,10 @@ export default function StudioMediaReveal() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-3">
               <div className="relative z-10 flex flex-col items-start gap-2">
                 <div ref={leftRef} className="aspect-square w-full overflow-hidden rounded-xl">
-                  {leftCase ? (
-                    leftCase.slug ? (
-                      <CaseLink item={leftCase}>
-                        <MediaBlock item={leftCase} />
-                      </CaseLink>
-                    ) : (
-                      <MediaBlock item={leftCase} />
-                    )
-                  ) : (
-                    <div className="h-full w-full bg-muted rounded-xl" />
-                  )}
+                  <SlotContent item={leftCase} loading={displayLoading} />
                 </div>
                 <p ref={leftLabelRef} className="text-sm font-semibold text-foreground">
-                  {leftCase?.categories?.[0]?.name ?? leftCase?.title ?? ""}
+                  {leftCase?.categories?.[0]?.name ?? leftCase?.title ?? "\u00A0"}
                 </p>
               </div>
 
@@ -224,26 +181,16 @@ export default function StudioMediaReveal() {
                   aria-hidden
                 />
                 <p ref={centerLabelRef} className="text-sm font-semibold text-foreground">
-                  {featured?.categories?.[0]?.name ?? featured?.title ?? ""}
+                  {featured?.categories?.[0]?.name ?? featured?.title ?? "\u00A0"}
                 </p>
               </div>
 
               <div className="relative z-10 flex flex-col items-start gap-2">
                 <div ref={rightRef} className="aspect-square w-full overflow-hidden rounded-xl">
-                  {rightCase ? (
-                    rightCase.slug ? (
-                      <CaseLink item={rightCase}>
-                        <MediaBlock item={rightCase} />
-                      </CaseLink>
-                    ) : (
-                      <MediaBlock item={rightCase} />
-                    )
-                  ) : (
-                    <div className="h-full w-full bg-muted rounded-xl" />
-                  )}
+                  <SlotContent item={rightCase} loading={displayLoading} />
                 </div>
                 <p ref={rightLabelRef} className="text-sm font-semibold text-foreground">
-                  {rightCase?.categories?.[0]?.name ?? rightCase?.title ?? ""}
+                  {rightCase?.categories?.[0]?.name ?? rightCase?.title ?? "\u00A0"}
                 </p>
               </div>
             </div>
@@ -255,7 +202,11 @@ export default function StudioMediaReveal() {
           ref={heroRef}
           className="absolute inset-0 z-30 pointer-events-none invisible opacity-0 hidden md:block"
         >
-          <MediaBlock item={featured} />
+          {featured ? (
+            <MediaBlock item={featured} />
+          ) : (
+            <div className="h-full w-full bg-muted" />
+          )}
         </div>
       </div>
     </section>
@@ -263,6 +214,30 @@ export default function StudioMediaReveal() {
 }
 
 /* ─── Sub-components ─────────────────────────────────────────────── */
+
+/** Renders loading skeleton, media content, or empty state for a grid slot. */
+function SlotContent({
+  item,
+  loading,
+}: {
+  item: StudioRevealDisplayItem | undefined;
+  loading: boolean;
+}) {
+  if (loading && !item) {
+    return <div className="h-full w-full bg-muted animate-pulse rounded-xl" />;
+  }
+  if (!item) {
+    return <div className="h-full w-full bg-muted rounded-xl" />;
+  }
+  if (item.slug) {
+    return (
+      <CaseLink item={item as StudioRevealDisplayItem & { slug: string }}>
+        <MediaBlock item={item} />
+      </CaseLink>
+    );
+  }
+  return <MediaBlock item={item} />;
+}
 
 function CaseLink({
   item,
@@ -285,6 +260,9 @@ function CaseLink({
 }
 
 function MediaBlock({ item }: { item: StudioRevealDisplayItem }) {
+  const [mediaReady, setMediaReady] = React.useState(false);
+  const blurhash = item.cover_blurhash;
+
   const posterUrl =
     item.cover_poster_url ??
     (item.cover_image_url
@@ -294,10 +272,40 @@ function MediaBlock({ item }: { item: StudioRevealDisplayItem }) {
         : null);
 
   if (item.cover_mux_playback_id) {
-    return <LazyMuxVideo playbackId={item.cover_mux_playback_id} poster={posterUrl} />;
+    return (
+      <div className="relative h-full w-full">
+        {blurhash && (
+          <BlurhashCanvas
+            hash={blurhash}
+            hidden={mediaReady}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        )}
+        <LazyMuxVideo
+          playbackId={item.cover_mux_playback_id}
+          poster={posterUrl}
+          onReady={() => setMediaReady(true)}
+        />
+      </div>
+    );
   }
   if (item.cover_video_url) {
-    return <LazyNativeVideo src={item.cover_video_url} poster={posterUrl} />;
+    return (
+      <div className="relative h-full w-full">
+        {blurhash && (
+          <BlurhashCanvas
+            hash={blurhash}
+            hidden={mediaReady}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        )}
+        <LazyNativeVideo
+          src={item.cover_video_url}
+          poster={posterUrl}
+          onReady={() => setMediaReady(true)}
+        />
+      </div>
+    );
   }
   const imageSrc =
     item.cover_image_url
@@ -305,14 +313,24 @@ function MediaBlock({ item }: { item: StudioRevealDisplayItem }) {
       : posterUrl;
   if (imageSrc) {
     return (
-      <OptimizedImage
-        src={imageSrc}
-        alt={item.title}
-        preset="card"
-        widths={[800, 1000, 1200]}
-        sizes="(max-width: 768px) 100vw, 33vw"
-        className="h-full w-full object-cover"
-      />
+      <div className="relative h-full w-full">
+        {blurhash && (
+          <BlurhashCanvas
+            hash={blurhash}
+            hidden={mediaReady}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        )}
+        <OptimizedImage
+          src={imageSrc}
+          alt={item.title}
+          preset="card"
+          widths={[800, 1000, 1200]}
+          sizes="(max-width: 768px) 100vw, 33vw"
+          className="h-full w-full object-cover"
+          onLoad={() => setMediaReady(true)}
+        />
+      </div>
     );
   }
   return (
@@ -344,7 +362,15 @@ function useInView(rootMargin = "200px") {
   return { ref, isVisible };
 }
 
-function LazyMuxVideo({ playbackId, poster }: { playbackId: string; poster: string | null }) {
+function LazyMuxVideo({
+  playbackId,
+  poster,
+  onReady,
+}: {
+  playbackId: string;
+  poster: string | null;
+  onReady?: () => void;
+}) {
   const { ref, isVisible } = useInView();
 
   return (
@@ -359,9 +385,10 @@ function LazyMuxVideo({ playbackId, poster }: { playbackId: string; poster: stri
           preload="metadata"
           autoPlay
           className="h-full w-full object-cover"
+          onCanPlay={onReady}
         />
       ) : poster ? (
-        <img src={poster} alt="" className="h-full w-full object-cover" />
+        <img src={poster} alt="" className="h-full w-full object-cover" onLoad={onReady} />
       ) : (
         <div className="h-full w-full bg-muted/40" />
       )}
@@ -369,7 +396,15 @@ function LazyMuxVideo({ playbackId, poster }: { playbackId: string; poster: stri
   );
 }
 
-function LazyNativeVideo({ src, poster }: { src: string; poster: string | null }) {
+function LazyNativeVideo({
+  src,
+  poster,
+  onReady,
+}: {
+  src: string;
+  poster: string | null;
+  onReady?: () => void;
+}) {
   const { ref, isVisible } = useInView();
 
   return (
@@ -383,9 +418,10 @@ function LazyNativeVideo({ src, poster }: { src: string; poster: string | null }
           playsInline
           autoPlay
           className="h-full w-full object-cover"
+          onCanPlay={onReady}
         />
       ) : poster ? (
-        <img src={poster} alt="" className="h-full w-full object-cover" />
+        <img src={poster} alt="" className="h-full w-full object-cover" onLoad={onReady} />
       ) : (
         <div className="h-full w-full bg-muted/40" />
       )}

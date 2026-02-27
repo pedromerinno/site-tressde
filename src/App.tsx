@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CaseCursorStyles } from "@/components/CaseCursorStyles";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useLayoutEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Index from "./pages/Index";
 import Servicos from "./pages/Servicos";
@@ -24,12 +25,38 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 
 const queryClient = new QueryClient();
 
+function scrollToTopSync() {
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
+  window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+}
+
+/** Nova rota sempre no topo: sem rolagem visível, sem restauração do browser. */
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useLayoutEffect(() => {
+    if (typeof window.history?.scrollRestoration === "string") {
+      window.history.scrollRestoration = "manual";
+    }
+  }, []);
+
+  useLayoutEffect(() => {
+    scrollToTopSync();
+    const raf = requestAnimationFrame(() => scrollToTopSync());
+    return () => cancelAnimationFrame(raf);
+  }, [pathname]);
+
+  return null;
+}
+
 function AppRoutes() {
   const location = useLocation();
   const isPublic = !location.pathname.startsWith("/admin");
 
   return (
     <>
+      <ScrollToTop />
       {isPublic && (
         <>
           <CookieBanner />

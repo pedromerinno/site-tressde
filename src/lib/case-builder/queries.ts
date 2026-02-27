@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase/client";
 import { getPrimaryCompany } from "@/lib/core/company";
+import { generateBlurhash } from "@/lib/core/blurhash";
 import type { CaseBlock, DraftBlock } from "./types";
 
 // ── Shared helpers (moved from AdminCases) ──────────────────────────
@@ -75,9 +76,19 @@ export async function uploadCover(
   const { data } = supabase.storage.from("case-covers").getPublicUrl(path);
   const publicUrl = toPublicObjectUrl(data.publicUrl, "case-covers");
 
+  // Generate blurhash from the uploaded image (best-effort)
+  let blurhash: string | null = null;
+  if (file.type.startsWith("image/")) {
+    try {
+      blurhash = await generateBlurhash(file);
+    } catch {
+      // non-critical — continue without blurhash
+    }
+  }
+
   const { data: updated, error: updateError } = await supabase
     .from("cases")
-    .update({ cover_image_url: publicUrl })
+    .update({ cover_image_url: publicUrl, cover_blurhash: blurhash })
     .eq("id", caseId)
     .select("cover_image_url")
     .single();
@@ -309,6 +320,7 @@ export type PublicCaseItem = {
   cover_image_url: string | null;
   cover_video_url: string | null;
   cover_mux_playback_id: string | null;
+  cover_blurhash: string | null;
   client_name: string | null;
   services: string[] | null;
   categories: Array<{ id: string; name: string; slug?: string }>;
@@ -368,6 +380,7 @@ export type StudioRevealDisplayItem = {
   cover_image_url: string | null;
   cover_video_url: string | null;
   cover_mux_playback_id: string | null;
+  cover_blurhash: string | null;
   cover_poster_url?: string | null;
   categories?: Array<{ id: string; name: string; slug?: string }>;
 };
@@ -394,6 +407,7 @@ export async function getStudioRevealDisplayItems(): Promise<
           cover_image_url: c.cover_image_url,
           cover_video_url: c.cover_video_url,
           cover_mux_playback_id: c.cover_mux_playback_id,
+          cover_blurhash: c.cover_blurhash,
           categories: c.categories,
         };
       return {
@@ -403,6 +417,7 @@ export async function getStudioRevealDisplayItems(): Promise<
         cover_image_url: null,
         cover_video_url: null,
         cover_mux_playback_id: null,
+        cover_blurhash: null,
         categories: [],
       };
     }
@@ -417,6 +432,7 @@ export async function getStudioRevealDisplayItems(): Promise<
       cover_image_url: slot.media_type === "image" ? slot.url : null,
       cover_video_url: slot.media_type === "video" ? slot.url : null,
       cover_mux_playback_id: slot.mux_playback_id ?? null,
+      cover_blurhash: null,
       cover_poster_url: poster ?? undefined,
       categories: [],
     };
@@ -447,7 +463,7 @@ export async function getPublicCases(): Promise<PublicCaseItem[]> {
   const { data, error } = await supabase
     .from("cases")
     .select(
-      "id,title,slug,summary,year,cover_image_url,cover_video_url,cover_mux_playback_id,services,status,published_at,clients(name),case_category_cases(case_categories(id,name,slug))",
+      "id,title,slug,summary,year,cover_image_url,cover_video_url,cover_mux_playback_id,cover_blurhash,services,status,published_at,clients(name),case_category_cases(case_categories(id,name,slug))",
     )
     .eq("status", "published")
     .eq("owner_company_id", company.id)
@@ -467,6 +483,7 @@ export async function getPublicCases(): Promise<PublicCaseItem[]> {
       cover_image_url: string | null;
       cover_video_url: string | null;
       cover_mux_playback_id: string | null;
+      cover_blurhash: string | null;
       services: string[] | null;
       clients: { name: string } | null;
       case_category_cases: Array<{ case_categories: PublicCaseItem["categories"][0] | null }> | null;
@@ -479,6 +496,7 @@ export async function getPublicCases(): Promise<PublicCaseItem[]> {
       cover_image_url: item.cover_image_url,
       cover_video_url: item.cover_video_url ?? null,
       cover_mux_playback_id: item.cover_mux_playback_id ?? null,
+      cover_blurhash: item.cover_blurhash ?? null,
       services: item.services,
       client_name: item.clients?.name ?? null,
       categories:
