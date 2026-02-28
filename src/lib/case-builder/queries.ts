@@ -335,6 +335,7 @@ export type StudioRevealSlot =
       url: string;
       mux_playback_id?: string;
       poster_url?: string;
+      blurhash?: string;
       title?: string;
     };
 
@@ -432,7 +433,7 @@ export async function getStudioRevealDisplayItems(): Promise<
       cover_image_url: slot.media_type === "image" ? slot.url : null,
       cover_video_url: slot.media_type === "video" ? slot.url : null,
       cover_mux_playback_id: slot.mux_playback_id ?? null,
-      cover_blurhash: null,
+      cover_blurhash: slot.blurhash ?? null,
       cover_poster_url: poster ?? undefined,
       categories: [],
     };

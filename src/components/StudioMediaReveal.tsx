@@ -283,7 +283,8 @@ function MediaBlock({ item }: { item: StudioRevealDisplayItem }) {
         )}
         <LazyMuxVideo
           playbackId={item.cover_mux_playback_id}
-          poster={posterUrl}
+          poster={blurhash ? null : posterUrl}
+          useBlurhash={!!blurhash}
           onReady={() => setMediaReady(true)}
         />
       </div>
@@ -301,7 +302,8 @@ function MediaBlock({ item }: { item: StudioRevealDisplayItem }) {
         )}
         <LazyNativeVideo
           src={item.cover_video_url}
-          poster={posterUrl}
+          poster={blurhash ? null : posterUrl}
+          useBlurhash={!!blurhash}
           onReady={() => setMediaReady(true)}
         />
       </div>
@@ -365,28 +367,45 @@ function useInView(rootMargin = "200px") {
 function LazyMuxVideo({
   playbackId,
   poster,
+  useBlurhash,
   onReady,
 }: {
   playbackId: string;
   poster: string | null;
+  useBlurhash?: boolean;
   onReady?: () => void;
 }) {
   const { ref, isVisible } = useInView();
+  const [ready, setReady] = React.useState(false);
+
+  const handleReady = React.useCallback(() => {
+    setReady(true);
+    onReady?.();
+  }, [onReady]);
 
   return (
-    <div ref={ref} className="mux-no-controls h-full w-full">
+    <div ref={ref} className="mux-no-controls relative h-full w-full">
       {isVisible ? (
-        <MuxPlayer
-          playbackId={playbackId}
-          poster={poster ?? undefined}
-          muted
-          loop
-          playsInline
-          preload="metadata"
-          autoPlay
-          className="h-full w-full object-cover"
-          onCanPlay={onReady}
-        />
+        <div
+          className={[
+            "h-full w-full transition-opacity duration-300",
+            useBlurhash && !ready ? "opacity-0" : "opacity-100",
+          ].join(" ")}
+        >
+          <MuxPlayer
+            playbackId={playbackId}
+            poster={useBlurhash ? undefined : (poster ?? undefined)}
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            autoPlay
+            className="h-full w-full object-cover"
+            onCanPlay={handleReady}
+          />
+        </div>
+      ) : useBlurhash ? (
+        <div className="h-full w-full" aria-hidden />
       ) : poster ? (
         <img src={poster} alt="" className="h-full w-full object-cover" onLoad={onReady} />
       ) : (
@@ -399,27 +418,44 @@ function LazyMuxVideo({
 function LazyNativeVideo({
   src,
   poster,
+  useBlurhash,
   onReady,
 }: {
   src: string;
   poster: string | null;
+  useBlurhash?: boolean;
   onReady?: () => void;
 }) {
   const { ref, isVisible } = useInView();
+  const [ready, setReady] = React.useState(false);
+
+  const handleReady = React.useCallback(() => {
+    setReady(true);
+    onReady?.();
+  }, [onReady]);
 
   return (
-    <div ref={ref} className="h-full w-full">
+    <div ref={ref} className="relative h-full w-full">
       {isVisible ? (
-        <video
-          src={src}
-          poster={poster ?? undefined}
-          muted
-          loop
-          playsInline
-          autoPlay
-          className="h-full w-full object-cover"
-          onCanPlay={onReady}
-        />
+        <div
+          className={[
+            "h-full w-full transition-opacity duration-300",
+            useBlurhash && !ready ? "opacity-0" : "opacity-100",
+          ].join(" ")}
+        >
+          <video
+            src={src}
+            poster={useBlurhash ? undefined : (poster ?? undefined)}
+            muted
+            loop
+            playsInline
+            autoPlay
+            className="h-full w-full object-cover"
+            onCanPlay={handleReady}
+          />
+        </div>
+      ) : useBlurhash ? (
+        <div className="h-full w-full" aria-hidden />
       ) : poster ? (
         <img src={poster} alt="" className="h-full w-full object-cover" onLoad={onReady} />
       ) : (
