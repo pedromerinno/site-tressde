@@ -1,12 +1,47 @@
+import { useQueries } from "@tanstack/react-query";
+import {
+  getStudioRevealDisplayItems,
+  getPublicCases,
+} from "@/lib/case-builder/queries";
 import FloatingNavbar from "@/components/FloatingNavbar";
 import StudioMediaReveal from "@/components/StudioMediaReveal";
 import StudioSection from "@/components/StudioSection";
 import PortfolioGrid from "@/components/PortfolioGrid";
 import Footer from "@/components/Footer";
+import HomePageSkeleton from "@/components/HomePageSkeleton";
 import { CasesSectionProvider } from "@/contexts/CasesSectionContext";
 import { ContactModalProvider } from "@/contexts/ContactModalContext";
 
+const STALE = 2 * 60 * 1000;
+
 const Index = () => {
+  const [studioQuery, casesQuery] = useQueries({
+    queries: [
+      {
+        queryKey: ["studio-reveal-display"],
+        queryFn: getStudioRevealDisplayItems,
+        staleTime: STALE,
+      },
+      {
+        queryKey: ["cases", "public"],
+        queryFn: getPublicCases,
+        staleTime: 5 * 60 * 1000,
+      },
+    ],
+  });
+
+  const isLoading = studioQuery.isLoading || casesQuery.isLoading;
+
+  if (isLoading) {
+    return (
+      <ContactModalProvider>
+        <CasesSectionProvider>
+          <HomePageSkeleton />
+        </CasesSectionProvider>
+      </ContactModalProvider>
+    );
+  }
+
   return (
     <ContactModalProvider>
       <CasesSectionProvider>
