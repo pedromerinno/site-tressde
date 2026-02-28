@@ -80,7 +80,7 @@ const pt = {
 
   // Site meta (defaults when no CMS)
   metaTitleDefault: "TRESSDE® Imagine.",
-  metaDescriptionDefault: "Agência full-service para marcas que lideram a evolução do mercado.",
+  metaDescriptionDefault: "Estúdio de motion e 3D. Nascido no Brasil, construído para o mundo. Estética ousada e execução precisa que dá vida às histórias.",
 
   // Servicos page — hero
   servicosLabel: "Serviços",
@@ -240,7 +240,7 @@ const enMap: Record<TranslationKey, string> = {
   notFoundBack: "Return to Home",
   metaTitleDefault: "TRESSDE® Imagine.",
   metaDescriptionDefault:
-    "Full-service agency for brands that lead market evolution.",
+    "Motion and 3D studio. Born in Brazil, built for the world. Bold aesthetics and precise execution that bring stories to life.",
 
   servicosLabel: "Services",
   servicosHeroLine1: "Design-driven 3D",
@@ -393,7 +393,7 @@ const esMap: Record<TranslationKey, string> = {
   notFoundBack: "Volver al inicio",
   metaTitleDefault: "TRESSDE® Imagine.",
   metaDescriptionDefault:
-    "Agencia full-service para marcas que lideran la evolución del mercado.",
+    "Estudio de motion y 3D. Nacido en Brasil, construido para el mundo. Estética audaz y ejecución precisa que dan vida a las historias.",
 
   servicosLabel: "Servicios",
   servicosHeroLine1: "3D orientado por diseño",
