@@ -5,7 +5,7 @@ import { useTranslation } from "@/i18n";
 
 const DEFAULTS = {
   favicon: "/favicon-tsd.svg",
-  ogImage: "",
+  ogImage: "/img-social-tsd.jpg",
 };
 
 /** Converts hex (#RRGGBB) to HSL string for CSS: "H S% L%" */
