@@ -14,7 +14,7 @@ import type { VideoContent } from "@/lib/case-builder/types";
 import { normalizeContainerContent } from "@/lib/case-builder/types";
 import CaseBlocksRenderer from "@/components/case-blocks-public/CaseBlocksRenderer";
 import PublicVideoBlock from "@/components/case-blocks-public/PublicVideoBlock";
-import CasePageSkeleton from "@/components/CasePageSkeleton";
+import PreloadScreen from "@/components/PreloadScreen";
 import { useTranslation } from "@/i18n";
 
 type CaseCategory = {
@@ -174,7 +174,14 @@ function CasePageContent() {
   const { t } = useTranslation();
   const contactModal = useContactModal();
   const [dockMenu, setDockMenu] = React.useState(false);
+  const [showPreload, setShowPreload] = React.useState(true);
   const dockSentinelRef = React.useRef<HTMLDivElement | null>(null);
+
+  // Dados em cache no mount: não mostra preload
+  React.useLayoutEffect(() => {
+    if (!isContentLoading) setShowPreload(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- só no mount
+  }, []);
   const [infoOpen, setInfoOpen] = React.useState(false);
   const infoButtonRef = React.useRef<HTMLButtonElement | null>(null);
   const infoMenuRef = React.useRef<HTMLDivElement | null>(null);
@@ -438,7 +445,7 @@ function CasePageContent() {
 
         <div className="relative w-full pb-28">
           {isContentLoading ? (
-            <CasePageSkeleton />
+            <div className="min-h-screen" aria-hidden />
           ) : caseQuery.isError || !caseQuery.data ? (
             <div className="border border-border bg-card p-8 text-sm text-muted-foreground">
               {t("caseNotFound")}
@@ -532,6 +539,12 @@ function CasePageContent() {
       </section>
 
       <Footer />
+      {showPreload && (
+        <PreloadScreen
+          isLoading={isContentLoading}
+          onComplete={() => setShowPreload(false)}
+        />
+      )}
     </main>
   );
 }

@@ -1,3 +1,4 @@
+import * as React from "react";
 import { useQueries } from "@tanstack/react-query";
 import {
   getStudioRevealDisplayItems,
@@ -8,7 +9,7 @@ import StudioMediaReveal from "@/components/StudioMediaReveal";
 import StudioSection from "@/components/StudioSection";
 import PortfolioGrid from "@/components/PortfolioGrid";
 import Footer from "@/components/Footer";
-import HomePageSkeleton from "@/components/HomePageSkeleton";
+import PreloadScreen from "@/components/PreloadScreen";
 import { CasesSectionProvider } from "@/contexts/CasesSectionContext";
 import { ContactModalProvider } from "@/contexts/ContactModalContext";
 
@@ -31,16 +32,12 @@ const Index = () => {
   });
 
   const isLoading = studioQuery.isLoading || casesQuery.isLoading;
+  const [showPreload, setShowPreload] = React.useState(true);
 
-  if (isLoading) {
-    return (
-      <ContactModalProvider>
-        <CasesSectionProvider>
-          <HomePageSkeleton />
-        </CasesSectionProvider>
-      </ContactModalProvider>
-    );
-  }
+  // Dados em cache no mount: não mostra preload
+  React.useLayoutEffect(() => {
+    if (!isLoading) setShowPreload(false);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- só no mount
 
   return (
     <ContactModalProvider>
@@ -54,6 +51,12 @@ const Index = () => {
           </div>
           <Footer />
         </main>
+        {showPreload && (
+          <PreloadScreen
+            isLoading={isLoading}
+            onComplete={() => setShowPreload(false)}
+          />
+        )}
       </CasesSectionProvider>
     </ContactModalProvider>
   );
